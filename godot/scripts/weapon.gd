@@ -2,7 +2,13 @@ class_name Weapon extends Node
 
 signal fired(target: Vector2)
 
-@export var ammo: int = 6
+@export var max_ammo: int = 6
+
+var ammo: int = max_ammo
+
+
+func _ready() -> void:
+	ammo = max_ammo
 
 
 func can_fire() -> bool:
@@ -17,4 +23,4 @@ func fire(target: Vector2) -> void:
 
 
 func reload() -> void:
-	ammo = 6
+	ammo = max_ammo

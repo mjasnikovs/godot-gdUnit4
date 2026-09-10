@@ -7,7 +7,7 @@ Every claim in this repo was measured against the working project in `godot/`, n
 copied from the docs. Two of them contradict the framework's own warning banner,
 and where they do, the measurement is shown.
 
-41 test cases across six suites, green under `--headless` and under `xvfb-run`.
+49 test cases across seven suites, green under `--headless` and under `xvfb-run`.
 
 ## How it works
 
@@ -60,7 +60,7 @@ Needs Godot 4.7 or newer.
 ```sh
 cd godot
 godot                                             # play the demo scene
-./run_tests.sh                                    # 41 test cases, exit 0 = pass
+./run_tests.sh                                    # 49 test cases, exit 0 = pass
 ```
 
 `run_tests.sh` uses `xvfb-run` when it can, so the mouse test really runs. Without
@@ -68,7 +68,10 @@ a display it falls back to `--headless` and that one test reports as skipped.
 
 Every GDScript warning that matters is set to **error**, including
 `untyped_declaration`, `inferred_declaration` and all four `unsafe_*` checks. Game
-scripts hold to all 23. Test suites relax three of them and nothing else.
+scripts carry two targeted `@warning_ignore` lines, both for the `Error` that
+`move_and_slide()` and `connect()` return. Test suites relax five warnings and
+only at the top of a file: `return_value_discarded`, `redundant_await`,
+`unsafe_method_access`, `unsafe_property_access` and `inferred_declaration`.
 
 ## What is in the project
 
@@ -80,6 +83,7 @@ scripts hold to all 23. Test suites relax three of them and nothing else.
 | `test/player_test.gd` | scene runner, frames, held input |
 | `test/menu_test.gd` | UI clicks, `do_skip` for display-only tests |
 | `test/asserts_test.gd` | dict, vector, object, func, error, failure asserts |
+| `test/weapon_test.gd` | plain node state, signal payload asserts |
 
 ## Read it
 

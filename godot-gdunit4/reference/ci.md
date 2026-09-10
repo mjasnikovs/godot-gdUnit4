@@ -3,7 +3,7 @@
 ## The invocation
 
 ```sh
-godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --ignoreHeadlessMode -a res://test
+godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --ignoreHeadlessMode -c -a res://test
 ```
 
 `-s` runs the tool script. Everything after it is gdUnit4's own arguments, not
@@ -68,7 +68,8 @@ This project does both, so the suite is green either way.
 ## Strict typing next to gdUnit4
 
 The project sets 23 GDScript warnings to error. `debug/gdscript/warnings/exclude_addons`
-stays at its default `true`, so the addon itself is not held to it.
+is written out as `true`, which is also its default, so the addon itself is not
+held to it.
 
 Test suites need these at the top, under `extends`:
 
@@ -80,7 +81,10 @@ Test suites need these at the top, under `extends`:
 @warning_ignore_start("inferred_declaration")     # _test_parameters, fuzzer, _do_skip
 ```
 
-Only the first three are needed by every suite. Game scripts keep all 23.
+Only the first three are needed by every suite; this project uses all five
+across its seven suites. Game scripts take no file-wide relaxation. They use a
+one-line `@warning_ignore("return_value_discarded")` at the two places that drop
+the `Error` returned by `move_and_slide()` and `connect()`.
 
 ## The GitHub workflow
 
@@ -89,19 +93,36 @@ Only the first three are needed by every suite. Game scripts keep all 23.
   working-directory: godot
   run: godot --headless --import
 
+- name: Install xvfb
+  run: sudo apt-get update && sudo apt-get install -y xvfb
+
 - name: Compile with warnings as errors
   working-directory: godot
   run: |
-    output=$(godot --headless --quit-after 120 2>&1 | grep -v '^Godot Engine' || true)
-    if [ -n "$output" ]; then echo "$output"; exit 1; fi
-    echo "clean"
+    status=0
+    while IFS= read -r f; do
+      if out=$(godot --headless --check-only --script "$f" 2>&1); then
+        echo "ok   $f"
+      else
+        echo "FAIL $f"; echo "$out" | grep -v '^Godot Engine'; status=1
+      fi
+    done < <(find scripts test -name '*.gd' | sort)
+    exit $status
 
 - name: Run the tests
   working-directory: godot
-  run: |
-    sudo apt-get install -y xvfb
-    xvfb-run -a godot -s addons/gdUnit4/bin/GdUnitCmdTool.gd -c -a res://test
+  run: xvfb-run -a godot -s addons/gdUnit4/bin/GdUnitCmdTool.gd -c -a res://test
 ```
 
-The compile step exists because a warning-as-error in a game script never reaches
-the test runner as a failure — it reaches it as a suite that will not load.
+Check every script by hand. `--check-only --script <file>` parses one file and
+exits non-zero on any warning-as-error. Do not use `godot --quit-after N` for
+this: it runs the main scene and only parses what that scene reaches. Measured on
+4.7.2, an `untyped_declaration` planted in a script the main scene never loads
+printed nothing and the step passed.
+
+The test run does catch such a script, but only when a suite depends on it, and
+it arrives as exit 105 "failed to parse" rather than as a test failure. The
+compile step names the file directly.
+
+`apt-get update` before the install is not optional. Package lists on a hosted
+runner go stale and the install 404s without it.

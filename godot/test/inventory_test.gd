@@ -70,12 +70,19 @@ func test_capacity_is_reached_after_n_adds(
 	assert_bool(inventory.is_full()).is_equal(expected_full)
 
 
-## A fuzzer feeds a fresh random value per iteration. 50 runs, one assert.
+## A fuzzer feeds a fresh random value per iteration. 50 runs, filled to capacity.
 func test_any_name_fits_until_capacity(
 	fuzzer := Fuzzers.rand_str(1, 12), fuzzer_iterations := 50
 ) -> void:
-	var fresh: Inventory = Inventory.new()
+	# fuzzer_iterations has to be read or unused_parameter rejects the file, and
+	# gdUnit4 needs the exact name so it cannot be underscore-prefixed.
 	assert_int(fuzzer_iterations).is_equal(50)
-	var name: String = fuzzer.next_value()
-	assert_bool(fresh.add(name)).is_true()
-	assert_array(fresh.items()).has_size(1)
+	var fresh: Inventory = Inventory.new()
+	for i: int in Inventory.CAPACITY:
+		# The index prefix keeps names distinct. add() rejects duplicates and two
+		# short random strings do collide.
+		var item_name: String = "%d_%s" % [i, fuzzer.next_value()]
+		assert_bool(fresh.add(item_name)).is_true()
+	assert_bool(fresh.is_full()).is_true()
+	assert_bool(fresh.add("one_too_many")).is_false()
+	assert_array(fresh.items()).has_size(Inventory.CAPACITY)

@@ -66,3 +66,21 @@ func test_zero_damage_is_ignored() -> void:
 	monitored.take_damage(0)
 	await assert_signal(monitored).wait_until(100).is_not_emitted("damaged")
 	assert_int(monitored.current).is_equal(100)
+
+
+func test_a_smaller_max_starts_at_that_max() -> void:
+	var weak: Health = auto_free(Health.new())
+	weak.max_health = 40
+	# _ready seeds current from max_health, so it fires on add_child.
+	add_child(weak)
+	assert_int(weak.current).is_equal(40)
+	assert_bool(weak.is_alive()).is_true()
+
+
+func test_a_smaller_max_dies_to_a_smaller_hit() -> void:
+	var weak: Health = auto_free(Health.new())
+	weak.max_health = 40
+	add_child(weak)
+	weak.take_damage(40)
+	assert_int(weak.current).is_zero()
+	assert_bool(weak.is_alive()).is_false()

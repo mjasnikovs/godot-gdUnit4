@@ -2,8 +2,13 @@ name: verify
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
@@ -17,8 +22,8 @@ jobs:
           curl -fsSL -o godot.zip \
             "https://github.com/godotengine/godot/releases/download/${VERSION}-stable/Godot_v${VERSION}-stable_linux.x86_64.zip"
           unzip -q godot.zip
-          mv Godot_v${VERSION}-stable_linux.x86_64 /usr/local/bin/godot
-          chmod +x /usr/local/bin/godot
+          sudo mv Godot_v${VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
           godot --version
 
       - name: Install xvfb
@@ -31,19 +36,29 @@ jobs:
       - name: Compile with warnings as errors
         working-directory: godot
         run: |
-          # Every warning is set to error in project.godot, so any script
-          # problem shows up here as output. No output means clean.
-          output=$(godot --headless --quit-after 120 2>&1 | grep -v '^Godot Engine' || true)
-          if [ -n "$output" ]; then
-            echo "$output"
-            exit 1
-          fi
-          echo "clean"
+          # Every warning is set to error in project.godot. --check-only parses
+          # one script and exits non-zero on any of them, so every file is
+          # covered. Running the main scene instead only loads what main.tscn
+          # reaches, which is two of the thirteen scripts here.
+          status=0
+          while IFS= read -r f; do
+            if out=$(godot --headless --check-only --script "$f" 2>&1); then
+              echo "ok   $f"
+            else
+              echo "FAIL $f"
+              echo "$out" | grep -v '^Godot Engine'
+              status=1
+            fi
+          done < <(find scripts test -name '*.gd' | sort)
+          exit $status
 
+      # Both legs use run_tests.sh so the runner flags live in one place.
       - name: Run the test suites
         working-directory: godot
-        run: xvfb-run -a godot -s addons/gdUnit4/bin/GdUnitCmdTool.gd -c -a res://test
+        run: ./run_tests.sh
 
       - name: Run the test suites headless
         working-directory: godot
-        run: godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --ignoreHeadlessMode -c -a res://test
+        env:
+          GDUNIT_HEADLESS: "1"
+        run: ./run_tests.sh

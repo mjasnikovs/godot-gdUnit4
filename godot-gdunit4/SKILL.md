@@ -15,7 +15,7 @@ description: >
 # gdUnit4 test suites (Godot 4)
 
 Verified against Godot 4.7.2 and gdUnit4 6.2.1 by building the project in `godot/`
-and running it. 41 test cases, green headless and under a display.
+and running it. 49 test cases, green headless and under a display.
 
 A test suite is one script that `extends GdUnitTestSuite`. Every function named
 `test_*` is a test. There is no registration, no manifest, no runner class.
@@ -43,7 +43,9 @@ Put this block at the top of every test suite, right under `extends`:
 @warning_ignore_start("unsafe_method_access")
 ```
 
-Game code stays strict. Only test code relaxes, and only these three.
+Only test code relaxes warnings file-wide. Game code takes a one-line
+`@warning_ignore("return_value_discarded")` where it drops the `Error` that
+`move_and_slide()` or `connect()` returns, and nothing broader.
 
 Add `unsafe_property_access` when a test reads a property off a mock or a
 `runner.scene()`, and `inferred_declaration` when a test takes `_test_parameters`,
@@ -217,7 +219,11 @@ A fuzzer feeds a fresh random value per iteration.
 
 ```gdscript
 func test_any_name_fits(fuzzer := Fuzzers.rand_str(1, 12), fuzzer_iterations := 50) -> void:
-	var name: String = fuzzer.next_value()
+	# fuzzer_iterations must be read or unused_parameter rejects the file, and
+	# gdUnit4 needs that exact name so it cannot be underscore-prefixed.
+	assert_int(fuzzer_iterations).is_equal(50)
+	# Not `name`: GdUnitTestSuite extends Node, so `name` shadows Node.name.
+	var item_name: String = fuzzer.next_value()
 ```
 
 An **unrecognised** argument name does not fail. gdUnit4 marks the test skipped
@@ -227,12 +233,13 @@ stops the test from running.
 ## Running it
 
 ```sh
-godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --ignoreHeadlessMode -a res://test
-xvfb-run -a godot -s addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://test
+godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --ignoreHeadlessMode -c -a res://test
+xvfb-run -a godot -s addons/gdUnit4/bin/GdUnitCmdTool.gd -c -a res://test
 ```
 
-Headless is refused without `--ignoreHeadlessMode` (exit 103). The runner is
-**fail-fast**: it stops at the first failing test. `-c` runs the whole set.
+Headless is refused without `--ignoreHeadlessMode` (exit 103). `-c` is not
+optional in practice: without it the runner is **fail-fast** and stops at the
+first failing test, so the run looks small rather than truncated.
 
 | Exit | Meaning |
 |---|---|

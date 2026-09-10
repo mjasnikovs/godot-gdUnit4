@@ -6,7 +6,7 @@ signal started
 
 
 func _ready() -> void:
+	# started.emit is already a Callable, so no closure is needed. connect()
+	# still returns an Error, hence the one-line ignore.
 	@warning_ignore("return_value_discarded")
-	play_button.pressed.connect(func() -> void:
-		started.emit()
-	)
+	play_button.pressed.connect(started.emit)

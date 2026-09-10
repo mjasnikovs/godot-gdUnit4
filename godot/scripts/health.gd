@@ -5,7 +5,13 @@ signal died
 
 @export var max_health: int = 100
 
-var current: int = 100
+# Seeded here for a Health built with new() and never added to a tree. A node in
+# a scene gets its exported max_health after _init, so _ready reseeds from it.
+var current: int = max_health
+
+
+func _ready() -> void:
+	current = max_health
 
 
 func take_damage(amount: int) -> void:

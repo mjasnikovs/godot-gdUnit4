@@ -17,8 +17,9 @@ Parse Error: Casting "Variant" to "Health" is unsafe.
 Not a failing test — a file that never loads. The suite disappears from the run.
 
 Fix: three `@warning_ignore_start` lines at the top of every suite, plus
-`unsafe_property_access` and `inferred_declaration` where needed. Game code keeps
-all 23.
+`unsafe_property_access` and `inferred_declaration` where needed. Game code takes
+no file-wide relaxation, only a one-line `@warning_ignore` where it discards the
+`Error` from `move_and_slide()` or `connect()`.
 
 The `unsafe_cast` error came from `auto_free(Health.new()) as Health`. A typed
 declaration has no cast and no warning:
