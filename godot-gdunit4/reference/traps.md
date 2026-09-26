@@ -80,7 +80,7 @@ func simulate_action_pressed(action: String, event_index := -1) -> GdUnitSceneRu
 	simulate_action_release(action, event_index)
 ```
 
-Measured: `simulate_action_pressed("move_right")` followed by
+Measured: `simulate_action_pressed(&"move_right")` followed by
 `simulate_frames(10)` left `velocity.x` at `0.0`. The action was already released
 when the first frame ran.
 
@@ -142,7 +142,7 @@ all run, so they are typed.
 ```gdscript
 	if not collected_unknown_aruments.is_empty():
 		attribute.is_skipped = true
-		attribute.skip_reason = "Unknown test case argument's %s found."
+		attribute.skip_reason = "Unknown test case argument's %s found." % collected_unknown_aruments
 ```
 
 The recognised names, after stripping a leading underscore: `timeout`, `do_skip`,

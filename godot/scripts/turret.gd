@@ -7,7 +7,7 @@ var range_px: float = 200.0
 
 
 func engage(from: Vector2, target: Vector2) -> bool:
-	if weapon == null:
+	if !weapon:
 		return false
 	if from.distance_to(target) > range_px:
 		return false

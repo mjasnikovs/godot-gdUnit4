@@ -1,5 +1,6 @@
 class_name Weapon extends Node
 
+@export_category("Settings")
 @export var max_ammo: int = 6
 
 var ammo: int = max_ammo

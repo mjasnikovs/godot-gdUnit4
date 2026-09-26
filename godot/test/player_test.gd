@@ -27,7 +27,7 @@ func test_health_child_is_wired() -> void:
 	var runner: GdUnitSceneRunner = scene_runner(PLAYER_SCENE)
 	var player: Player = runner.scene()
 	assert_object(player.health).is_not_null()
-	assert_int(player.health.current).is_equal(100)
+	assert_int(player.health.c_health).is_equal(100)
 
 
 func test_pick_up_emits_on_the_live_scene() -> void:
@@ -47,13 +47,13 @@ func test_held_direction_drives_the_body() -> void:
 	runner.simulate_action_press(&"move_right")
 	await runner.simulate_frames(10)
 	assert_float(player.velocity.x).is_greater(0.0)
-	assert_int(player.facing).is_equal(1)
+	assert_int(player.c_facing).is_equal(1)
 
 	runner.simulate_action_press(&"move_left")
 	runner.simulate_action_release(&"move_right")
 	await runner.simulate_frames(10)
 	assert_float(player.velocity.x).is_less(0.0)
-	assert_int(player.facing).is_equal(-1)
+	assert_int(player.c_facing).is_equal(-1)
 
 	runner.simulate_action_release(&"move_left")
 	await runner.simulate_frames(10)

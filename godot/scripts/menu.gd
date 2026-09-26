@@ -1,5 +1,6 @@
 class_name Menu extends Control
 
+@export_category("Nodes")
 @export var play_button: Button
 
 signal started

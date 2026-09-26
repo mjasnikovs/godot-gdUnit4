@@ -29,7 +29,7 @@ func before_test() -> void:
 
 func test_damage_never_goes_below_zero() -> void:
 	health.take_damage(500)
-	assert_int(health.current).is_equal(0).is_not_negative()
+	assert_int(health.c_health).is_equal(0).is_not_negative()
 ```
 
 Those two `@warning_ignore_start` lines are not decoration. This project sets all 49

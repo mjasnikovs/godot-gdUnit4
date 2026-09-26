@@ -25,7 +25,7 @@ extends GdUnitTestSuite
 
 
 func test_damage_subtracts() -> void:
-	assert_int(health.current).is_equal(70)
+	assert_int(health.c_health).is_equal(70)
 ```
 
 ## The first thing that will bite you
@@ -45,6 +45,12 @@ Put these at the top of a test suite, right under `extends`. A suite with no
 
 That is the whole file-wide relaxation, and only test code gets it. Game code
 follows the `godot-code-style` skill and suppresses nothing.
+
+Everything else in `godot-code-style` holds in a suite too, with four more gdUnit4
+needs. A test reaches a node of the scene under test with `runner.find_child(...)`.
+It may emit an engine signal the scene declares, such as a `Button`'s `pressed`, to
+stand in for the input. A suite omits `class_name`; gdUnit4 finds it by path. And no
+`print`: a failed assert is the report.
 
 Everything else stays typed. Read `mock`, `verify` and `on` into typed locals
 (below). Type `_test_parameters`, `_do_skip` and `fuzzer_iterations` too. Two
@@ -90,7 +96,7 @@ assert_file(v)   assert_result(v)  assert_that(v)
 ```
 
 ```gdscript
-	assert_int(health.current).is_equal(0).is_not_negative()
+	assert_int(health.c_health).is_equal(0).is_not_negative()
 	assert_array(inventory.items()).contains_exactly(["torch"]).not_contains(["sword"])
 	assert_str(menu.play_button.text).is_equal("Play")
 ```
@@ -261,7 +267,7 @@ Reports land in `res://reports/`. Git-ignore them.
    a class at 20 public methods, and every hook the suite defines counts: with
    `before_test` and `after_test` that leaves 18 tests, with all four hooks 16. A
    bigger subject gets one suite per behaviour, `<subject>_<behaviour>_test.gd`.
-3. `extends GdUnitTestSuite` and the two `@warning_ignore_start` lines.
+3. `extends GdUnitTestSuite` and the `@warning_ignore_start` lines the suite needs.
 4. `before_test` builds the subject with `auto_free`.
 5. Asserts first, then signals, then doubles, then the scene runner.
 6. Run `gdformat` and `gdlint` with the `godot-code-style` configs.
