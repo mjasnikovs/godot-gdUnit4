@@ -83,16 +83,16 @@ and the test still says PASSED. A `RefCounted` needs no `auto_free`.
 
 Pick the family, then chain. The family decides which methods exist.
 
-```gdscript
+```text
 assert_bool(v)   assert_int(v)     assert_float(v)   assert_str(v)
 assert_array(v)  assert_dict(v)    assert_vector(v)  assert_object(v)
 assert_file(v)   assert_result(v)  assert_that(v)
 ```
 
 ```gdscript
-assert_int(health.current).is_equal(0).is_not_negative()
-assert_array(inventory.items()).contains_exactly(["torch"]).not_contains(["sword"])
-assert_str(menu.play_button.text).is_equal("Play")
+	assert_int(health.current).is_equal(0).is_not_negative()
+	assert_array(inventory.items()).contains_exactly(["torch"]).not_contains(["sword"])
+	assert_str(menu.play_button.text).is_equal("Play")
 ```
 
 Full method list per family in `reference/asserts.md`.
@@ -123,13 +123,13 @@ A **mock** is a fake. It runs no real code and returns type defaults.
 ```gdscript
 	var weapon: Weapon = mock(Weapon)
 	var stub: Weapon = do_return(true).on(weapon)
-	stub.can_fire()                            # stub one method
+	stub.can_fire()  # stub one method
 	turret.weapon = weapon
 
 	assert_bool(turret.engage(ORIGIN, NEAR)).is_true()
-	var checked: Weapon = verify(weapon)       # exactly once
+	var checked: Weapon = verify(weapon)  # exactly once
 	checked.fire(NEAR)
-	checked = verify(weapon, 0)                # never
+	checked = verify(weapon, 0)  # never
 	checked.fire(FAR)
 	# A matcher is not a Vector2, so the verify receiver cannot be typed as Weapon.
 	@warning_ignore("unsafe_method_access")
@@ -146,7 +146,7 @@ A **spy** wraps a real instance. Real code runs and calls are still recorded.
 	assert_bool(turret.engage(ORIGIN, NEAR)).is_true()
 	var checked: Weapon = verify(weapon)
 	checked.fire(NEAR)
-	assert_int(weapon.ammo).is_equal(5)        # the real shot was taken
+	assert_int(weapon.ammo).is_equal(5)  # the real shot was taken
 ```
 
 `verify_no_interactions(x)` asserts nothing was called.
@@ -171,10 +171,10 @@ Full anatomy in `reference/doubles.md`.
 direction takes three steps:
 
 ```gdscript
-	runner.simulate_action_press("move_right")
+	runner.simulate_action_press(&"move_right")
 	await runner.simulate_frames(10)
 	assert_float(player.velocity.x).is_greater(0.0)
-	runner.simulate_action_release("move_right")
+	runner.simulate_action_release(&"move_right")
 ```
 
 Mouse positions are **window** pixels, not canvas pixels. A project that stretches
@@ -182,10 +182,7 @@ Mouse positions are **window** pixels, not canvas pixels. A project that stretch
 mouse at window (60,60). Let Godot do the maths:
 
 ```gdscript
-	var center: Vector2 = (
-		menu.get_viewport().get_screen_transform()
-		* menu.play_button.get_global_rect().get_center()
-	)
+	var center: Vector2 = menu.get_viewport().get_screen_transform() * menu.play_button.get_global_rect().get_center()
 	runner.set_mouse_position(center)
 ```
 
@@ -260,10 +257,10 @@ Reports land in `res://reports/`. Git-ignore them.
 ## Build order
 
 1. Enable the plugin: `addons/gdUnit4/` in the project, ticked in Project Settings.
-2. One suite per script under test, in `test/`, named `<subject>_test.gd`. At most
-   18 tests in one: gdlint caps a class at 20 public methods, and `before_test` and
-   `after_test` count. A bigger subject gets one suite per behaviour,
-   `<subject>_<behaviour>_test.gd`.
+2. One suite per script under test, in `test/`, named `<subject>_test.gd`. gdlint caps
+   a class at 20 public methods, and every hook the suite defines counts: with
+   `before_test` and `after_test` that leaves 18 tests, with all four hooks 16. A
+   bigger subject gets one suite per behaviour, `<subject>_<behaviour>_test.gd`.
 3. `extends GdUnitTestSuite` and the two `@warning_ignore_start` lines.
 4. `before_test` builds the subject with `auto_free`.
 5. Asserts first, then signals, then doubles, then the scene runner.

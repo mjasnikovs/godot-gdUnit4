@@ -17,7 +17,6 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 [debug]
 
-gdscript/warnings/exclude_addons=true
 gdscript/warnings/unassigned_variable=2
 gdscript/warnings/unassigned_variable_op_assign=2
 gdscript/warnings/unused_variable=2

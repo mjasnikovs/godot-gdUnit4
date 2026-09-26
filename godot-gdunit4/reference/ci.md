@@ -67,18 +67,17 @@ This project does both, so the suite is green either way.
 
 ## Strict typing next to gdUnit4
 
-The project sets all 49 GDScript warnings to error. `debug/gdscript/warnings/exclude_addons`
-is written out as `true`. On 4.7.2 that is a legacy key that Godot folds into
-`directory_rules`: measured, `false` became `{"res://addons": 1}` and made an
-addon script fail. `true` behaves like the default, so the addon itself is not
-held to the warnings.
+The project sets all 49 GDScript warnings to error. The addon is not held to
+them: Godot's default `directory_rules` is `{"res://addons": 0}`. Leave it, and
+leave the legacy `exclude_addons` key out — Godot folds it into `directory_rules`,
+and measured on 4.7.2, `false` there made an addon script fail.
 
 Game code follows the `godot-code-style` skill and suppresses nothing. A value it
 does not want goes into a typed `_`-prefixed throwaway:
 
 ```gdscript
 	var _collided: bool = move_and_slide()
-	var _error: int = play_button.pressed.connect(report_started)
+	var _error: int = play_button.pressed.connect(func() -> void: report_started())
 ```
 
 `move_and_slide()` returns `bool` and `Signal.connect()` returns `int`. Typing
@@ -87,8 +86,8 @@ either throwaway as `Error` does not compile. Measured on 4.7.2.
 Test suites relax at most two warnings file-wide, and only the ones they use:
 
 ```gdscript
-@warning_ignore_start("return_value_discarded")   # every fluent assert call
-@warning_ignore_start("redundant_await")          # await on assert_signal / simulate_*
+@warning_ignore_start("return_value_discarded")  # every fluent assert call
+@warning_ignore_start("redundant_await")  # await on assert_signal / simulate_*
 ```
 
 Two more are allowed, each on one line and never file-wide:
@@ -131,10 +130,20 @@ it from every suite broke nothing.
     done < <(find scripts test -name '*.gd' | sort)
     exit $status
 
-- name: Run the tests
+# Both legs use run_tests.sh so the runner flags live in one place.
+- name: Run the test suites
   working-directory: godot
-  run: xvfb-run -a godot -s addons/gdUnit4/bin/GdUnitCmdTool.gd -c -a res://test
+  run: ./run_tests.sh
+
+- name: Run the test suites headless
+  working-directory: godot
+  env:
+    GDUNIT_HEADLESS: "1"
+  run: ./run_tests.sh
 ```
+
+`run_tests.sh` picks `xvfb-run` when there is no display, so the first leg runs the
+mouse test for real and the second proves the suite is green headless too.
 
 Check every script by hand. `--check-only --script <file>` parses one file and
 exits non-zero on any warning-as-error. Do not use `godot --quit-after N` for

@@ -18,7 +18,7 @@ behaviour.
 	var weapon: Weapon = mock(Weapon)
 	turret.weapon = weapon
 
-	assert_bool(turret.engage(ORIGIN, NEAR)).is_false()   # can_fire() answered false
+	assert_bool(turret.engage(ORIGIN, NEAR)).is_false()  # can_fire() answered false
 	var checked: Weapon = verify(weapon)
 	checked.can_fire()
 ```
@@ -26,9 +26,9 @@ behaviour.
 Modes:
 
 ```gdscript
-	mock(Weapon)                       # RETURN_DEFAULTS, the default
-	mock(Weapon, CALL_REAL_FUNC)       # runs the real body
-	mock(Weapon, RETURN_DEEP_STUB)     # object returns are themselves mocks
+	mock(Weapon)  # RETURN_DEFAULTS, the default
+	mock(Weapon, CALL_REAL_FUNC)  # runs the real body
+	mock(Weapon, RETURN_DEEP_STUB)  # object returns are themselves mocks
 ```
 
 A mock of a `Node` subclass does not need `auto_free`. gdUnit4 releases doubles
@@ -59,7 +59,7 @@ happen, and the call is recorded on the way through.
 	assert_bool(turret.engage(ORIGIN, NEAR)).is_true()
 	var checked: Weapon = verify(weapon)
 	checked.fire(NEAR)
-	assert_int(weapon.ammo).is_equal(5)     # ammo really dropped
+	assert_int(weapon.ammo).is_equal(5)  # ammo really dropped
 ```
 
 Talk to the **spy**, not the original. Calls made straight to `real` are invisible
@@ -68,13 +68,13 @@ to `verify`.
 ## Verify
 
 ```gdscript
-	var checked: Weapon = verify(weapon)    # exactly once, default times = 1
+	var checked: Weapon = verify(weapon)  # exactly once, default times = 1
 	checked.fire(NEAR)
-	checked = verify(weapon, 0)             # never
+	checked = verify(weapon, 0)  # never
 	checked.fire(FAR)
-	verify_no_interactions(weapon)          # nothing at all was called
-	verify_no_more_interactions(weapon)     # nothing left unverified
-	reset(weapon)                           # clear the recorded calls
+	verify_no_interactions(weapon)  # nothing at all was called
+	verify_no_more_interactions(weapon)  # nothing left unverified
+	reset(weapon)  # clear the recorded calls
 ```
 
 `verify_no_more_interactions` counts **every** recorded call. A probe call the code
@@ -94,12 +94,12 @@ But found interactions on:
 
 Use one when the exact value does not matter.
 
-```gdscript
-	any()            any_bool()       any_int()        any_float()
-    any_string()     any_color()      any_vector()     any_vector2()
-    any_vector2i()   any_vector3()    any_vector3i()   any_vector4()
-    any_vector4i()   any_rect2()      any_plane()      any_quat()
-    any_aabb()       any_basis()      any_transform_2d()  any_transform_3d()
+```text
+any()            any_bool()       any_int()        any_float()
+any_string()     any_color()      any_vector()     any_vector2()
+any_vector2i()   any_vector3()    any_vector3i()   any_vector4()
+any_vector4i()   any_rect2()      any_plane()      any_quat()
+any_aabb()       any_basis()      any_transform_2d()  any_transform_3d()
 ```
 
 A matcher is not the parameter's type, so it cannot go through a receiver typed

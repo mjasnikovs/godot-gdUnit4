@@ -24,7 +24,7 @@ The `unsafe_cast` error came from `auto_free(Health.new()) as Health`. A typed
 declaration has no cast and no warning:
 
 ```gdscript
-	health = auto_free(Health.new())        # var health: Health
+	health = auto_free(Health.new())  # var health: Health
 ```
 
 ## 2. The runner is fail-fast by default
@@ -94,9 +94,9 @@ Same shape for `simulate_key_pressed` and `simulate_mouse_button_pressed`.
 | `await assert_signal(m).is_not_emitted("died")` | 2s 10ms |
 | `await assert_signal(m).wait_until(100).is_not_emitted("died")` | 102ms |
 
-There is nothing to wait for, so it waits out the default 2000ms. Two of them in
-the 8-case health suite made it take 4s 28ms. With `wait_until(100)` on both, the
-whole 41-case run finishes in **1s 128ms**.
+There is nothing to wait for, so it waits out the default 2000ms. Two of them made
+the health suite take 4s 28ms. With `wait_until(100)` on both, the whole run
+finished in **1s 128ms**. Measured when the project had 41 cases.
 
 ## 7. An orphan node passes the test and fails the run
 
@@ -114,7 +114,7 @@ non-zero exit catches it; CI that greps for "FAILED" does not.
 `RefCounted` subjects never orphan. Mocks and spies of `Node` subclasses do not
 either — gdUnit4 frees the double itself.
 
-## 8. Fuzzer and parameter arguments must stay inferred
+## 8. A fuzzer argument must stay inferred
 
 gdUnit4 re-reads the default expression from source and evaluates it
 (`GdUnitExpressionRunner`). A typed fuzzer parameter broke that:

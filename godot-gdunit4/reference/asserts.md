@@ -58,7 +58,7 @@ order, nothing else. The `_same` variants compare by reference instead of value.
 `is_equal_approx` `is_less` `is_less_equal` `is_greater` `is_greater_equal`
 `is_between` `is_not_between`
 
-Works for every `Vector2/2i/3/3i/4/4i`. Pass `type_check := false` to compare a
+Works for every `Vector2/2i/3/3i/4/4i`. Pass `false` for `type_check` to compare a
 `Vector2` against a `Vector2i`.
 
 ## assert_object
@@ -111,9 +111,10 @@ Wraps a `Callable` and asserts on what Godot reported while it ran.
 Asserts that an assertion itself fails. Used to test custom assertions.
 
 ```gdscript
-	assert_failure(func() -> void: assert_int(1).is_equal(2)) \
-		.is_failed().has_message("Expecting:\n '2'\n but was\n '1'")
+	assert_failure(func() -> void: assert_int(1).is_equal(2)).is_failed()
 ```
+
+Chain `has_message(...)` after `is_failed()` to pin the failure text as well.
 
 ## assert_that
 
