@@ -67,7 +67,7 @@ This project does both, so the suite is green either way.
 
 ## Strict typing next to gdUnit4
 
-The project sets 23 GDScript warnings to error. `debug/gdscript/warnings/exclude_addons`
+The project sets all 49 GDScript warnings to error. `debug/gdscript/warnings/exclude_addons`
 is written out as `true`. On 4.7.2 that is a legacy key that Godot folds into
 `directory_rules`: measured, `false` became `{"res://addons": 1}` and made an
 addon script fail. `true` behaves like the default, so the addon itself is not

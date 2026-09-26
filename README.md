@@ -32,7 +32,7 @@ func test_damage_never_goes_below_zero() -> void:
 	assert_int(health.current).is_equal(0).is_not_negative()
 ```
 
-Those two `@warning_ignore_start` lines are not decoration. This project sets 23
+Those two `@warning_ignore_start` lines are not decoration. This project sets all 49
 GDScript warnings to error, and without them the test file does not load at all.
 
 ## The ten traps
@@ -67,7 +67,7 @@ gdlint scripts/ test/
 `run_tests.sh` uses `xvfb-run` when it can, so the mouse test really runs. Without
 a display it falls back to `--headless` and that one test reports as skipped.
 
-23 of Godot's 49 GDScript warnings are set to **error**, including `untyped_declaration`,
+All 49 of Godot's GDScript warnings are set to **error**, including `untyped_declaration`,
 `inferred_declaration` and all five `unsafe_*` checks. Game code follows the
 [godot-code-style](https://github.com/mjasnikovs/godot-code-style) skill and
 suppresses nothing. Test suites relax two warnings at the top of a file,

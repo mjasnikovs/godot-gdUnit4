@@ -5,7 +5,7 @@ Method after each claim.
 
 ## 1. Strict warnings stop the test file from loading
 
-The project sets 23 GDScript warnings to error. Adding one ordinary test suite
+Measured with 23 GDScript warnings set to error (the project now sets all 49), adding one ordinary test suite
 produced 13 parse errors and exit code **105**:
 
 ```
