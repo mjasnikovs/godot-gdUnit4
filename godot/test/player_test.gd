@@ -1,9 +1,7 @@
-## Scene runner: drive a real scene, advance frames, simulate input.
 extends GdUnitTestSuite
 
+# Scene runner: drive a real scene, advance frames, simulate input.
 @warning_ignore_start("return_value_discarded")
-@warning_ignore_start("unsafe_method_access")
-@warning_ignore_start("unsafe_property_access")
 @warning_ignore_start("redundant_await")
 
 const PLAYER_SCENE: String = "res://scenes/player.tscn"
@@ -39,9 +37,9 @@ func test_pick_up_emits_on_the_live_scene() -> void:
 	await assert_signal(player).is_emitted("picked_up", ["torch"])
 
 
-## Input simulation needs a real display server. It is a no-op under --headless,
-## so this suite runs under xvfb in CI. simulate_action_pressed presses AND
-## releases in one call, so holding a direction needs press / frames / release.
+# Input simulation needs a real display server. It is a no-op under --headless,
+# so this suite runs under xvfb in CI. simulate_action_pressed presses AND
+# releases in one call, so holding a direction needs press / frames / release.
 func test_held_direction_drives_the_body() -> void:
 	var runner: GdUnitSceneRunner = scene_runner(PLAYER_SCENE)
 	var player: Player = runner.scene()

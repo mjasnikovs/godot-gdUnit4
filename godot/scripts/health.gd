@@ -1,13 +1,13 @@
 class_name Health extends Node
 
-signal damaged(amount: int)
-signal died
-
 @export var max_health: int = 100
 
 # Seeded here for a Health built with new() and never added to a tree. A node in
 # a scene gets its exported max_health after _init, so _ready reseeds from it.
 var current: int = max_health
+
+signal damaged(amount: int)
+signal died
 
 
 func _ready() -> void:

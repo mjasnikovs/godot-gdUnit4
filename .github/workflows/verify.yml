@@ -33,6 +33,17 @@ jobs:
         working-directory: godot
         run: godot --headless --import
 
+      - name: Install gdtoolkit
+        run: pip install "gdtoolkit==4.5.0"
+
+      - name: Format
+        working-directory: godot
+        run: gdformat --check scripts/ test/
+
+      - name: Lint
+        working-directory: godot
+        run: gdlint scripts/ test/
+
       - name: Compile with warnings as errors
         working-directory: godot
         run: |

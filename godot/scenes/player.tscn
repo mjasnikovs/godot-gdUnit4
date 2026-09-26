@@ -6,8 +6,9 @@
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(16, 16)
 
-[node name="Player" type="CharacterBody2D"]
+[node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("health")]
 script = ExtResource("1")
+health = NodePath("Health")
 
 [node name="Health" type="Node" parent="."]
 script = ExtResource("2")

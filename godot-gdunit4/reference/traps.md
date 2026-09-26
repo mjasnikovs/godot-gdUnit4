@@ -16,10 +16,9 @@ Parse Error: Casting "Variant" to "Health" is unsafe.
 
 Not a failing test — a file that never loads. The suite disappears from the run.
 
-Fix: three `@warning_ignore_start` lines at the top of every suite, plus
-`unsafe_property_access` and `inferred_declaration` where needed. Game code takes
-no file-wide relaxation, only a one-line `@warning_ignore` where it discards the
-`Error` from `move_and_slide()` or `connect()`.
+Fix: `return_value_discarded` and `redundant_await` relaxed at the top of the
+suite, only the ones it uses. The `Variant` from `mock`, `verify` and `on` goes into
+a typed local, which clears `unsafe_method_access`. Game code relaxes nothing.
 
 The `unsafe_cast` error came from `auto_free(Health.new()) as Health`. A typed
 declaration has no cast and no warning:
@@ -129,8 +128,12 @@ Invalid call. Nonexistent function 'new' in base 'GDScript'.
 Invalid assignment of property or key '_iteration_index' ... on a base object of type 'Nil'.
 ```
 
-`fuzzer := Fuzzers.rand_str(1, 12)` works. So does `_test_parameters := [...]`.
-The price is `@warning_ignore_start("inferred_declaration")`.
+`fuzzer := Fuzzers.rand_str(1, 12)` works. The price is one
+`@warning_ignore("inferred_declaration")` on that test function.
+
+Only the fuzzer is affected. Measured on 4.7.2: `_test_parameters: Array = [...]`,
+`fuzzer_iterations: int = 50`, `_do_skip: bool = ...` and `_skip_reason: String = ...`
+all run, so they are typed.
 
 ## 9. An unknown test argument silently skips the test
 
@@ -147,11 +150,20 @@ The recognised names, after stripping a leading underscore: `timeout`, `do_skip`
 turns the test into a skip. A typo in `_test_parameters` costs you the test with no
 error.
 
-## 10. Exported Node paths do not resolve on instantiate
+## 10. An exported node needs `node_paths` in the `.tscn`
 
 `@export var health: Health` written into the `.tscn` as `health = NodePath("Health")`
-read back as `<null>` after `PackedScene.instantiate()`, with the `Health` child
-present in `get_children()`.
+reads back as `<null>` after `PackedScene.instantiate()` — **when the node line
+lacks the `node_paths` header**. Measured on 4.7.2, before and after the scene
+enters the tree.
 
-`@onready var health: Health = $Health` resolved correctly inside `scene_runner`,
-which puts the scene in the tree and lets `_ready` run.
+With the header it resolves on `instantiate()`:
+
+```
+[node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("health")]
+script = ExtResource("1")
+health = NodePath("Health")
+```
+
+The editor writes that header when you drag a node into the slot. A hand-written
+`.tscn` forgets it. So the fix is the header, not a `$Health` path in the script.

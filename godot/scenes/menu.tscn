@@ -2,11 +2,12 @@
 
 [ext_resource type="Script" path="res://scripts/menu.gd" id="1"]
 
-[node name="Menu" type="Control"]
+[node name="Menu" type="Control" node_paths=PackedStringArray("play_button")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("1")
+play_button = NodePath("Play")
 
 [node name="Play" type="Button" parent="."]
 offset_left = 20.0

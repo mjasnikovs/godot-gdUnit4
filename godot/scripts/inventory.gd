@@ -5,7 +5,6 @@ const CAPACITY: int = 4
 var _slots: Array[String] = []
 
 
-## Returns false when the inventory is full or the item is already held.
 func add(item: String) -> bool:
 	if _slots.size() >= CAPACITY or _slots.has(item):
 		return false

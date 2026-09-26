@@ -19,7 +19,8 @@ behaviour.
 	turret.weapon = weapon
 
 	assert_bool(turret.engage(ORIGIN, NEAR)).is_false()   # can_fire() answered false
-	verify(weapon).can_fire()
+	var checked: Weapon = verify(weapon)
+	checked.can_fire()
 ```
 
 Modes:
@@ -38,8 +39,8 @@ with the test; the suite reports 0 orphans.
 `do_return` fixes one method's answer. Read it as a sentence.
 
 ```gdscript
-	do_return(true).on(weapon).can_fire()
-	do_return(3).on(weapon).ammo_left()
+	var stub: Weapon = do_return(true).on(weapon)
+	stub.can_fire()
 ```
 
 The stub is per mock, not per class. Stubbing does not count as an interaction.
@@ -56,7 +57,8 @@ happen, and the call is recorded on the way through.
 	turret.weapon = weapon
 
 	assert_bool(turret.engage(ORIGIN, NEAR)).is_true()
-	verify(weapon).fire(NEAR)
+	var checked: Weapon = verify(weapon)
+	checked.fire(NEAR)
 	assert_int(weapon.ammo).is_equal(5)     # ammo really dropped
 ```
 
@@ -66,9 +68,10 @@ to `verify`.
 ## Verify
 
 ```gdscript
-	verify(weapon).fire(NEAR)               # exactly once, default times = 1
-	verify(weapon, 0).fire(FAR)             # never
-	verify(weapon, 2).fire(any_vector2())   # exactly twice
+	var checked: Weapon = verify(weapon)    # exactly once, default times = 1
+	checked.fire(NEAR)
+	checked = verify(weapon, 0)             # never
+	checked.fire(FAR)
 	verify_no_interactions(weapon)          # nothing at all was called
 	verify_no_more_interactions(weapon)     # nothing left unverified
 	reset(weapon)                           # clear the recorded calls
@@ -77,7 +80,7 @@ to `verify`.
 `verify_no_more_interactions` counts **every** recorded call. A probe call the code
 under test made on the way — `can_fire()` before `fire()` — is an unverified
 interaction and fails the assertion. Verify it too, or drop to
-`verify(weapon).fire(...)` alone.
+verifying `fire(...)` alone.
 
 Measured failure message when `can_fire()` is left unverified:
 
@@ -99,19 +102,30 @@ Use one when the exact value does not matter.
     any_aabb()       any_basis()      any_transform_2d()  any_transform_3d()
 ```
 
+A matcher is not the parameter's type, so it cannot go through a receiver typed
+as `Weapon`. `fire(any_vector2())` on a `Weapon` is a parse error: argument 1
+should be `Vector2` but is `GdUnitArgumentMatcher`. This is the one call that
+stays untyped, with a one-line ignore:
+
 ```gdscript
+	# A matcher is not a Vector2, so the verify receiver cannot be typed as Weapon.
+	@warning_ignore("unsafe_method_access")
 	verify(weapon, 2).fire(any_vector2())
 ```
 
 ## Strict typing
 
-`mock`, `spy` and `verify` all return `Variant`. Assign through a typed variable
-so the rest of the test stays checked:
+`mock`, `spy`, `verify` and `on` all return `Variant`. Assign each one to a typed
+local, so the next call is checked like any other:
 
 ```gdscript
 	var weapon: Weapon = mock(Weapon)
+	var stub: Weapon = do_return(true).on(weapon)
+	stub.can_fire()
+	var checked: Weapon = verify(weapon)
+	checked.fire(NEAR)
 ```
 
-`as Weapon` also works, but trips `unsafe_cast`. The typed declaration does not.
-Calls made on the result still need `@warning_ignore_start("unsafe_method_access")`
-at the top of the suite, because `verify(x)` is typed `Variant`.
+`as Weapon` trips `unsafe_cast`. The typed declaration does not. Measured on
+4.7.2: with typed locals, no suite needs `unsafe_method_access` file-wide. Only a
+verify with an argument matcher keeps it, on one line.

@@ -1,12 +1,14 @@
 class_name Menu extends Control
 
-signal started
+@export var play_button: Button
 
-@onready var play_button: Button = $Play
+signal started
 
 
 func _ready() -> void:
-	# started.emit is already a Callable, so no closure is needed. connect()
-	# still returns an Error, hence the one-line ignore.
-	@warning_ignore("return_value_discarded")
-	play_button.pressed.connect(started.emit)
+	assert(play_button, "menu.gd - @export play_button is not set in the editor on: " + self.name)
+	var _error: int = play_button.pressed.connect(report_started)
+
+
+func report_started() -> void:
+	started.emit()

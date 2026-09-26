@@ -1,11 +1,7 @@
-## Array asserts, parameterized cases and fuzzers on a plain RefCounted.
 extends GdUnitTestSuite
 
+# Array asserts, parameterized cases and fuzzers on a plain RefCounted.
 @warning_ignore_start("return_value_discarded")
-@warning_ignore_start("unsafe_method_access")
-# Parameterized and fuzzer parameters must stay inferred; gdUnit4 re-parses the
-# default expression from source and a typed fuzzer parameter fails to build.
-@warning_ignore_start("inferred_declaration")
 
 var inventory: Inventory
 
@@ -57,23 +53,19 @@ func test_items_returns_a_copy() -> void:
 	assert_array(inventory.items()).has_size(1)
 
 
-## One test, three runs. The last parameter must be named _test_parameters.
+# One test, three runs. The last parameter must be named _test_parameters.
 func test_capacity_is_reached_after_n_adds(
-	count: int, expected_full: bool, _test_parameters := [
-		[1, false],
-		[3, false],
-		[4, true]
-	]
+	count: int, expected_full: bool, _test_parameters: Array = [[1, false], [3, false], [4, true]]
 ) -> void:
 	for i: int in count:
 		assert_bool(inventory.add("item_%d" % i)).is_true()
 	assert_bool(inventory.is_full()).is_equal(expected_full)
 
 
-## A fuzzer feeds a fresh random value per iteration. 50 runs, filled to capacity.
-func test_any_name_fits_until_capacity(
-	fuzzer := Fuzzers.rand_str(1, 12), fuzzer_iterations := 50
-) -> void:
+# A fuzzer feeds a fresh random value per iteration. 50 runs, filled to capacity.
+# A typed fuzzer parameter fails to build (reference/traps.md, 8), so it stays inferred.
+@warning_ignore("inferred_declaration")
+func test_any_name_fits_until_capacity(fuzzer := Fuzzers.rand_str(1, 12), fuzzer_iterations: int = 50) -> void:
 	# fuzzer_iterations has to be read or unused_parameter rejects the file, and
 	# gdUnit4 needs the exact name so it cannot be underscore-prefixed.
 	assert_int(fuzzer_iterations).is_equal(50)

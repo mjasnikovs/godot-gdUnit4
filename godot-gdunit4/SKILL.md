@@ -35,23 +35,25 @@ the value is thrown away. `await` sits in front of calls that are not coroutines
 Both are warnings, and a project with warnings as errors **refuses to load the test
 file at all** — reported as `Parse error` during discovery, exit code 105.
 
-Put this block at the top of every test suite, right under `extends`:
+Put these at the top of a test suite, right under `extends`. A suite with no
+`await` leaves out the second:
 
 ```gdscript
 @warning_ignore_start("return_value_discarded")
 @warning_ignore_start("redundant_await")
-@warning_ignore_start("unsafe_method_access")
 ```
 
-Only test code relaxes warnings file-wide. Game code takes a one-line
-`@warning_ignore("return_value_discarded")` where it drops the `Error` that
-`move_and_slide()` or `connect()` returns, and nothing broader.
+That is the whole file-wide relaxation, and only test code gets it. Game code
+follows the `godot-code-style` skill and suppresses nothing.
 
-Add `unsafe_property_access` when a test reads a property off a mock or a
-`runner.scene()`, and `inferred_declaration` when a test takes `_test_parameters`,
-a fuzzer, or `_do_skip`. Those three parameters must stay inferred — gdUnit4
-re-reads the default expression from source and a typed fuzzer parameter fails to
-build.
+Everything else stays typed. Read `mock`, `verify` and `on` into typed locals
+(below). Type `_test_parameters`, `_do_skip` and `fuzzer_iterations` too. Two
+cases keep a one-line `@warning_ignore`, never a file-wide one:
+
+- a fuzzer parameter, which must stay `:=`-inferred because gdUnit4 re-reads its
+  default from source: `@warning_ignore("inferred_declaration")` on the test.
+- a `verify` with an argument matcher, which cannot go through a typed receiver:
+  `@warning_ignore("unsafe_method_access")` on that line.
 
 ## The four hooks
 
@@ -120,13 +122,18 @@ A **mock** is a fake. It runs no real code and returns type defaults.
 
 ```gdscript
 	var weapon: Weapon = mock(Weapon)
-	do_return(true).on(weapon).can_fire()      # stub one method
+	var stub: Weapon = do_return(true).on(weapon)
+	stub.can_fire()                            # stub one method
 	turret.weapon = weapon
 
 	assert_bool(turret.engage(ORIGIN, NEAR)).is_true()
-	verify(weapon).fire(NEAR)                  # exactly once
-	verify(weapon, 0).fire(FAR)                # never
-	verify(weapon, 2).fire(any_vector2())      # argument matcher
+	var checked: Weapon = verify(weapon)       # exactly once
+	checked.fire(NEAR)
+	checked = verify(weapon, 0)                # never
+	checked.fire(FAR)
+	# A matcher is not a Vector2, so the verify receiver cannot be typed as Weapon.
+	@warning_ignore("unsafe_method_access")
+	verify(weapon, 2).fire(any_vector2())
 ```
 
 A **spy** wraps a real instance. Real code runs and calls are still recorded.
@@ -137,7 +144,8 @@ A **spy** wraps a real instance. Real code runs and calls are still recorded.
 	var weapon: Weapon = spy(real)
 
 	assert_bool(turret.engage(ORIGIN, NEAR)).is_true()
-	verify(weapon).fire(NEAR)
+	var checked: Weapon = verify(weapon)
+	checked.fire(NEAR)
 	assert_int(weapon.ammo).is_equal(5)        # the real shot was taken
 ```
 
@@ -193,8 +201,8 @@ underscore so they do not read as unused parameters.
 
 ```gdscript
 func test_clicking_the_button_emits_started(
-	_do_skip := DisplayServer.get_name() == "headless",
-	_skip_reason := "mouse picking needs a real display server"
+	_do_skip: bool = DisplayServer.get_name() == "headless",
+	_skip_reason: String = "mouse picking needs a real display server"
 ) -> void:
 ```
 
@@ -207,18 +215,16 @@ One test, many runs. The parameter set is the last argument and must be named
 
 ```gdscript
 func test_capacity_is_reached_after_n_adds(
-	count: int, expected_full: bool, _test_parameters := [
-		[1, false],
-		[3, false],
-		[4, true]
-	]
+	count: int, expected_full: bool, _test_parameters: Array = [[1, false], [3, false], [4, true]]
 ) -> void:
 ```
 
-A fuzzer feeds a fresh random value per iteration.
+A fuzzer feeds a fresh random value per iteration. It is the one parameter that
+must stay inferred, so its test carries a one-line ignore.
 
 ```gdscript
-func test_any_name_fits(fuzzer := Fuzzers.rand_str(1, 12), fuzzer_iterations := 50) -> void:
+@warning_ignore("inferred_declaration")
+func test_any_name_fits(fuzzer := Fuzzers.rand_str(1, 12), fuzzer_iterations: int = 50) -> void:
 	# fuzzer_iterations must be read or unused_parameter rejects the file, and
 	# gdUnit4 needs that exact name so it cannot be underscore-prefixed.
 	assert_int(fuzzer_iterations).is_equal(50)
@@ -255,10 +261,11 @@ Reports land in `res://reports/`. Git-ignore them.
 
 1. Enable the plugin: `addons/gdUnit4/` in the project, ticked in Project Settings.
 2. One suite per script under test, in `test/`, named `<subject>_test.gd`.
-3. `extends GdUnitTestSuite` and the three `@warning_ignore_start` lines.
+3. `extends GdUnitTestSuite` and the two `@warning_ignore_start` lines.
 4. `before_test` builds the subject with `auto_free`.
 5. Asserts first, then signals, then doubles, then the scene runner.
-6. Wire the CLI into CI and treat exit 101 as a failure too.
+6. Run `gdformat` and `gdlint` with the `godot-code-style` configs.
+7. Wire the CLI into CI and treat exit 101 as a failure too.
 
 ## Reference
 

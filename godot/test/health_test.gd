@@ -1,12 +1,11 @@
-## Hooks, plain asserts and signal asserts on a Node under test.
 extends GdUnitTestSuite
 
+# Hooks, plain asserts and signal asserts on a Node under test.
 # gdUnit4's assertions are a fluent chain, so every call returns the assert and
-# the project's strict warnings-as-errors would reject the file. Three of them
+# the project's strict warnings-as-errors would reject the file. Two of them
 # are switched off for test code only, never for game code.
 @warning_ignore_start("return_value_discarded")
 @warning_ignore_start("redundant_await")
-@warning_ignore_start("unsafe_method_access")
 
 var health: Health
 

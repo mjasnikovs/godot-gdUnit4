@@ -58,8 +58,8 @@ nodes does not. Two ways out:
 
 ```gdscript
 func test_clicking_the_button(
-	_do_skip := DisplayServer.get_name() == "headless",
-	_skip_reason := "mouse picking needs a real display server"
+	_do_skip: bool = DisplayServer.get_name() == "headless",
+	_skip_reason: String = "mouse picking needs a real display server"
 ) -> void:
 ```
 
@@ -68,23 +68,38 @@ This project does both, so the suite is green either way.
 ## Strict typing next to gdUnit4
 
 The project sets 23 GDScript warnings to error. `debug/gdscript/warnings/exclude_addons`
-is written out as `true`, which is also its default, so the addon itself is not
-held to it.
+is written out as `true`. On 4.7.2 that is a legacy key that Godot folds into
+`directory_rules`: measured, `false` became `{"res://addons": 1}` and made an
+addon script fail. `true` behaves like the default, so the addon itself is not
+held to the warnings.
 
-Test suites need these at the top, under `extends`:
+Game code follows the `godot-code-style` skill and suppresses nothing. A value it
+does not want goes into a typed `_`-prefixed throwaway:
+
+```gdscript
+	var _collided: bool = move_and_slide()
+	var _error: int = play_button.pressed.connect(report_started)
+```
+
+`move_and_slide()` returns `bool` and `Signal.connect()` returns `int`. Typing
+either throwaway as `Error` does not compile. Measured on 4.7.2.
+
+Test suites relax at most two warnings file-wide, and only the ones they use:
 
 ```gdscript
 @warning_ignore_start("return_value_discarded")   # every fluent assert call
 @warning_ignore_start("redundant_await")          # await on assert_signal / simulate_*
-@warning_ignore_start("unsafe_method_access")     # mock, spy, verify return Variant
-@warning_ignore_start("unsafe_property_access")   # reading a property off a double
-@warning_ignore_start("inferred_declaration")     # _test_parameters, fuzzer, _do_skip
 ```
 
-Only the first three are needed by every suite; this project uses all five
-across its seven suites. Game scripts take no file-wide relaxation. They use a
-one-line `@warning_ignore("return_value_discarded")` at the two places that drop
-the `Error` returned by `move_and_slide()` and `connect()`.
+Two more are allowed, each on one line and never file-wide:
+
+- `@warning_ignore("unsafe_method_access")` on a `verify` that takes an argument
+  matcher (`reference/doubles.md`).
+- `@warning_ignore("inferred_declaration")` on a test that takes a fuzzer
+  (`reference/traps.md`, 8).
+
+Nothing else. `unsafe_property_access` is not needed at all. Measured: removing
+it from every suite broke nothing.
 
 ## The GitHub workflow
 
@@ -95,6 +110,13 @@ the `Error` returned by `move_and_slide()` and `connect()`.
 
 - name: Install xvfb
   run: sudo apt-get update && sudo apt-get install -y xvfb
+
+- name: Format and lint
+  working-directory: godot
+  run: |
+    pip install "gdtoolkit==4.5.0"
+    gdformat --check scripts/ test/
+    gdlint scripts/ test/
 
 - name: Compile with warnings as errors
   working-directory: godot
@@ -119,6 +141,11 @@ exits non-zero on any warning-as-error. Do not use `godot --quit-after N` for
 this: it runs the main scene and only parses what that scene reaches. Measured on
 4.7.2, an `untyped_declaration` planted in a script the main scene never loads
 printed nothing and the step passed.
+
+`--check-only` does not register autoloads. A script that names one fails with
+`Identifier not found`, so this step only fits a project with no autoload, like
+this one. With an autoload, load every script from a scene instead and check
+`can_instantiate()` — the `godot-code-style` project does that.
 
 The test run does catch such a script, but only when a suite depends on it, and
 it arrives as exit 105 "failed to parse" rather than as a test failure. The

@@ -1,9 +1,8 @@
-## Ammo accounting on a plain Node, including a non-default magazine size.
 extends GdUnitTestSuite
 
+# Ammo accounting on a plain Node, including a non-default magazine size.
 @warning_ignore_start("return_value_discarded")
 @warning_ignore_start("redundant_await")
-@warning_ignore_start("unsafe_method_access")
 
 var weapon: Weapon
 
@@ -35,7 +34,7 @@ func test_reload_refills_to_the_default_max() -> void:
 	assert_int(weapon.ammo).is_equal(6)
 
 
-## The bug this guards: reload() used to hardcode 6 and shrink a larger magazine.
+# The bug this guards: reload() used to hardcode 6 and shrink a larger magazine.
 func test_reload_refills_to_a_larger_configured_max() -> void:
 	var big: Weapon = auto_free(Weapon.new())
 	big.max_ammo = 12

@@ -18,7 +18,6 @@ extends GdUnitTestSuite
 
 @warning_ignore_start("return_value_discarded")
 @warning_ignore_start("redundant_await")
-@warning_ignore_start("unsafe_method_access")
 
 var health: Health
 
@@ -33,45 +32,48 @@ func test_damage_never_goes_below_zero() -> void:
 	assert_int(health.current).is_equal(0).is_not_negative()
 ```
 
-Those three `@warning_ignore_start` lines are not decoration. This project sets 23
+Those two `@warning_ignore_start` lines are not decoration. This project sets 23
 GDScript warnings to error, and without them the test file does not load at all.
 
 ## The ten traps
 
 | # | Trap | Symptom | Fix |
 |---|---|---|---|
-| 1 | Fluent asserts under warnings-as-errors | suite never loads, exit 105 | three `@warning_ignore_start` lines per suite |
+| 1 | Fluent asserts under warnings-as-errors | suite never loads, exit 105 | two `@warning_ignore_start` lines per suite, typed locals for doubles |
 | 2 | The runner is fail-fast | the run looks small, not truncated | `-c` |
 | 3 | Headless refused | exit 103 before anything runs | `--ignoreHeadlessMode`, or `xvfb-run` |
 | 4 | Mouse position is window pixels | the click lands on the parent Control | `get_screen_transform() * rect.get_center()` |
 | 5 | `simulate_action_pressed` also releases | `velocity.x` stays 0 | press, frames, release |
 | 6 | `is_not_emitted` waits out the timeout | 2s per call | `wait_until(100)` |
 | 7 | A missing `auto_free` | test PASSED, exit code 101 | `auto_free`, or use `RefCounted` |
-| 8 | Typed fuzzer parameter | `Nonexistent function 'new'` at runtime | keep `:=` on test parameters |
+| 8 | Typed fuzzer parameter | `Nonexistent function 'new'` at runtime | keep `:=` on the fuzzer only |
 | 9 | Unknown test argument | test silently skipped | only 6 argument names are recognised |
-| 10 | `@export` node path in a `.tscn` | reads back `<null>` after instantiate | `@onready var x := $Child` |
+| 10 | `@export` node path in a `.tscn` | reads back `<null>` after instantiate | `node_paths=PackedStringArray(...)` on the node line |
 
 Trap 1 is the one that stops you starting. Trap 7 is the one that ships.
 
 ## Run it
 
-Needs Godot 4.7 or newer.
+Needs Godot 4.7.2 or newer, and gdtoolkit 4.5.0 for `gdformat` and `gdlint`.
 
 ```sh
 cd godot
 godot                                             # play the demo scene
+gdformat --check scripts/ test/
+gdlint scripts/ test/
 ./run_tests.sh                                    # 49 test cases, exit 0 = pass
 ```
 
 `run_tests.sh` uses `xvfb-run` when it can, so the mouse test really runs. Without
 a display it falls back to `--headless` and that one test reports as skipped.
 
-Every GDScript warning that matters is set to **error**, including
-`untyped_declaration`, `inferred_declaration` and all four `unsafe_*` checks. Game
-scripts carry two targeted `@warning_ignore` lines, both for the `Error` that
-`move_and_slide()` and `connect()` return. Test suites relax five warnings and
-only at the top of a file: `return_value_discarded`, `redundant_await`,
-`unsafe_method_access`, `unsafe_property_access` and `inferred_declaration`.
+All 23 GDScript warnings are set to **error**, including `untyped_declaration`,
+`inferred_declaration` and all five `unsafe_*` checks. Game code follows the
+[godot-code-style](https://github.com/mjasnikovs/godot-code-style) skill and
+suppresses nothing. Test suites relax two warnings at the top of a file,
+`return_value_discarded` and `redundant_await`. Two more appear on one line each:
+the fuzzer test's `inferred_declaration`, and the `verify` with an argument
+matcher's `unsafe_method_access`.
 
 ## What is in the project
 
