@@ -44,8 +44,8 @@ Without `-c` the runner is fail-fast: `_executor.fail_fast(true)` in
 | 104 | Godot version not supported |
 | 105 | a test script failed to parse |
 
-101 is the one people miss. The console prints PASSED and the run still fails.
-Check the exit code, not the log.
+101 is the one people miss. Every test passed and the run still fails; under
+`--quiet` nothing says so but the exit code. Check the exit code, not the log.
 
 ## Reports
 

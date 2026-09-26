@@ -100,7 +100,7 @@ finished in **1s 128ms**. Measured when the project had 41 cases.
 
 ## 7. An orphan node passes the test and fails the run
 
-A `Health.new()` without `auto_free`:
+A `Health.new()` without `auto_free`, run without `--quiet` so the report shows:
 
 ```
 WARNING: Detected 1 possible orphan nodes.
@@ -108,8 +108,9 @@ Statistics: 1 test cases | 0 errors | 0 failures | 1 orphans | PASSED
 Exit code: 101
 ```
 
-The test says PASSED. Only the exit code says otherwise. CI that checks for a
-non-zero exit catches it; CI that greps for "FAILED" does not.
+The test says PASSED, and under `--quiet` it says nothing at all. Only the exit code
+says otherwise. CI that checks for a non-zero exit catches it; CI that greps for
+"FAILED" does not.
 
 `RefCounted` subjects never orphan. Mocks and spies of `Node` subclasses do not
 either — gdUnit4 frees the double itself.

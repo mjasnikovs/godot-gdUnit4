@@ -45,7 +45,7 @@ suite that awaits adds a second, for `redundant_await`.
 | 4 | Mouse position is window pixels | the click lands on the parent Control | `get_screen_transform() * rect.get_center()` |
 | 5 | `simulate_action_pressed` also releases | `velocity.x` stays 0 | press, frames, release |
 | 6 | `is_not_emitted` waits out the timeout | 2s per call | `wait_until(100)` |
-| 7 | A missing `auto_free` | test PASSED, exit code 101 | `auto_free`, or use `RefCounted` |
+| 7 | A missing `auto_free` | every test passed, exit code 101 | `auto_free`, or use `RefCounted` |
 | 8 | Typed fuzzer parameter | `Nonexistent function 'new'` at runtime | keep `:=` on the fuzzer only |
 | 9 | Unknown test argument | test silently skipped | only 6 argument names are recognised |
 | 10 | `@export` node path in a `.tscn` | reads back `<null>` after instantiate | `node_paths=PackedStringArray(...)` on the node line |
@@ -65,8 +65,9 @@ godot --headless --quit-after 180                 # silent past the banner = the
 ./run_tests.sh                                    # 49 test cases, silent and exit 0 = pass
 ```
 
-`run_tests.sh` uses `xvfb-run` when it can, so the mouse test really runs. Without
-a display it falls back to `--headless` and that one test reports as skipped.
+`run_tests.sh` uses the display it has, or `xvfb-run` when there is none, so the mouse
+test really runs. Without either it falls back to `--headless` and that one test
+reports as skipped.
 
 All 49 of Godot's GDScript warnings are set to **error**, including `untyped_declaration`,
 `inferred_declaration` and all five `unsafe_*` checks. Game code follows the

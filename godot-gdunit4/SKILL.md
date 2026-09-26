@@ -90,8 +90,8 @@ func before_test() -> void:
 ```
 
 `auto_free` releases the object when the test ends. A `Node` created without it
-survives the test and gdUnit4 reports **orphan nodes**: a warning, exit code 101,
-and the test still says PASSED. A `RefCounted` needs no `auto_free`.
+survives the test and gdUnit4 reports **orphan nodes**: exit code 101 while every
+test passed, and under `--quiet` the exit code is the only sign. A `RefCounted` needs no `auto_free`.
 
 ## The assert families
 
