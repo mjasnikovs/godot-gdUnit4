@@ -41,9 +41,12 @@ func test_func_assert_polls_until_true() -> void:
 	await assert_func(health, "is_alive").wait_until(500).is_false()
 
 
-# assert_error captures what Godot reported while the callable ran.
-func test_error_assert_catches_a_push_error() -> void:
-	await assert_error(func() -> void: push_error("boom")).is_push_error("boom")
+# Not is_push_error: an asserted push_error still prints, and CI fails on any output.
+func test_error_assert_sees_an_empty_weapon_fire_quietly() -> void:
+	var weapon: Weapon = auto_free(Weapon.new())
+	weapon.max_ammo = 0
+	add_child(weapon)
+	await assert_error(func() -> void: weapon.fire(Vector2.ZERO)).is_success()
 
 
 # assert_failure asserts that an assertion fails. Useful when tightening a test.

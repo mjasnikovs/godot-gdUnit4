@@ -103,8 +103,11 @@ Polls a method until it answers, instead of waiting on a signal.
 Wraps a `Callable` and asserts on what Godot reported while it ran.
 
 ```gdscript
-	await assert_error(func() -> void: node.take_damage(-1)).is_push_error("negative damage")
+	await assert_error(func() -> void: weapon.fire(Vector2.ZERO)).is_success()
 ```
+
+`is_push_error` and `is_push_warning` catch the message, but Godot still prints it
+to stderr, so a CI step that fails on any output fails on that test (`ci.md`).
 
 ## assert_failure
 

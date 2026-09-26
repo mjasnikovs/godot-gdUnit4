@@ -4,11 +4,11 @@ extends GdUnitTestSuite
 @warning_ignore_start("return_value_discarded")
 @warning_ignore_start("redundant_await")
 
-const MENU_SCENE: String = "res://scenes/menu.tscn"
+const MENU_SCENE_PATH: String = "res://scenes/menu.tscn"
 
 
 func test_button_exists_and_is_labelled() -> void:
-	var runner: GdUnitSceneRunner = scene_runner(MENU_SCENE)
+	var runner: GdUnitSceneRunner = scene_runner(MENU_SCENE_PATH)
 	var menu: Menu = runner.scene()
 	assert_object(menu.play_button).is_not_null()
 	assert_str(menu.play_button.text).is_equal("Play")
@@ -16,7 +16,7 @@ func test_button_exists_and_is_labelled() -> void:
 
 # The button can always be driven directly, with no mouse and no display.
 func test_pressing_the_button_emits_started() -> void:
-	var runner: GdUnitSceneRunner = scene_runner(MENU_SCENE)
+	var runner: GdUnitSceneRunner = scene_runner(MENU_SCENE_PATH)
 	var menu: Menu = monitor_signals(runner.scene())
 	menu.play_button.pressed.emit()
 	await assert_signal(menu).is_emitted("started")
@@ -29,7 +29,7 @@ func test_clicking_the_button_emits_started(
 	_do_skip: bool = DisplayServer.get_name() == "headless",
 	_skip_reason: String = "mouse picking needs a real display server"
 ) -> void:
-	var runner: GdUnitSceneRunner = scene_runner(MENU_SCENE)
+	var runner: GdUnitSceneRunner = scene_runner(MENU_SCENE_PATH)
 	var menu: Menu = monitor_signals(runner.scene())
 
 	# Mouse positions are window pixels. The project stretches a 320x180

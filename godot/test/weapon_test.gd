@@ -22,7 +22,7 @@ func test_fire_spends_one_round() -> void:
 
 
 func test_fire_stops_at_empty() -> void:
-	for i: int in 10:
+	for _i: int in 10:
 		weapon.fire(Vector2.ZERO)
 	assert_int(weapon.ammo).is_zero().is_not_negative()
 	assert_bool(weapon.can_fire()).is_false()

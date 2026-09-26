@@ -6,15 +6,16 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 GODOT="${GODOT_BIN:-godot}"
-ARGS=(-s addons/gdUnit4/bin/GdUnitCmdTool.gd -c -a res://test)
+# --quiet keeps a pass silent. A failure is the exit code; its detail is in reports/.
+ARGS=(--quiet -s addons/gdUnit4/bin/GdUnitCmdTool.gd -c -a res://test)
 
 if [ -n "${GDUNIT_HEADLESS:-}" ]; then
 	exec "$GODOT" --headless "${ARGS[@]}" --ignoreHeadlessMode
 elif [ -n "${DISPLAY:-}" ]; then
 	exec "$GODOT" "${ARGS[@]}"
 elif command -v xvfb-run >/dev/null 2>&1; then
-	exec xvfb-run -a "$GODOT" "${ARGS[@]}"
+	# No input method reaches the virtual display, and Godot warns when XMODIFIERS names one.
+	exec env -u XMODIFIERS xvfb-run -a "$GODOT" "${ARGS[@]}"
 else
-	echo "No display found. Running headless; the UI click test will be skipped."
 	exec "$GODOT" --headless "${ARGS[@]}" --ignoreHeadlessMode
 fi

@@ -29,12 +29,33 @@ jobs:
       - name: Install xvfb
         run: sudo apt-get update && sudo apt-get install -y xvfb
 
+      - name: Install gdtoolkit
+        run: pip install "gdtoolkit==4.5.0"
+
       - name: Import assets
         working-directory: godot
         run: godot --headless --import
 
-      - name: Install gdtoolkit
-        run: pip install "gdtoolkit==4.5.0"
+      - name: Launch silently
+        working-directory: godot
+        run: |
+          # Parses only what the main scene reaches; the next step and the suites cover the rest.
+          status=0
+          output=$(godot --headless --quit-after 180 2>&1) || status=$?
+          output=$(echo "$output" | grep -v '^Godot Engine' || true)
+          if [ -n "$output" ] || [ "$status" != 0 ]; then echo "$output"; exit 1; fi
+
+      - name: Compile every script with warnings as errors
+        working-directory: godot
+        run: |
+          failed=0
+          while IFS= read -r f; do
+            status=0
+            output=$(godot --headless --check-only --script "$f" 2>&1) || status=$?
+            output=$(echo "$output" | grep -v '^Godot Engine' || true)
+            if [ -n "$output" ] || [ "$status" != 0 ]; then echo "$f"; echo "$output"; failed=1; fi
+          done < <(find scripts test -name '*.gd' | sort)
+          exit $failed
 
       - name: Format
         working-directory: godot
@@ -44,32 +65,28 @@ jobs:
         working-directory: godot
         run: gdlint scripts/ test/
 
-      - name: Compile with warnings as errors
-        working-directory: godot
-        run: |
-          # Every warning is set to error in project.godot. --check-only parses
-          # one script and exits non-zero on any of them, so every file is
-          # covered. Running the main scene instead only loads what main.tscn
-          # reaches, which is two of the thirteen scripts here.
-          status=0
-          while IFS= read -r f; do
-            if out=$(godot --headless --check-only --script "$f" 2>&1); then
-              echo "ok   $f"
-            else
-              echo "FAIL $f"
-              echo "$out" | grep -v '^Godot Engine'
-              status=1
-            fi
-          done < <(find scripts test -name '*.gd' | sort)
-          exit $status
-
       # Both legs use run_tests.sh so the runner flags live in one place.
       - name: Run the test suites
         working-directory: godot
-        run: ./run_tests.sh
+        run: |
+          status=0
+          output=$(./run_tests.sh 2>&1) || status=$?
+          output=$(echo "$output" | grep -v '^Godot Engine' || true)
+          if [ -n "$output" ] || [ "$status" != 0 ]; then echo "$output"; exit 1; fi
 
       - name: Run the test suites headless
         working-directory: godot
         env:
           GDUNIT_HEADLESS: "1"
-        run: ./run_tests.sh
+        run: |
+          status=0
+          output=$(./run_tests.sh 2>&1) || status=$?
+          output=$(echo "$output" | grep -v '^Godot Engine' || true)
+          if [ -n "$output" ] || [ "$status" != 0 ]; then echo "$output"; exit 1; fi
+
+      - name: Upload the reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gdunit4-reports
+          path: godot/reports/

@@ -3,12 +3,18 @@
 ## The invocation
 
 ```sh
-godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --ignoreHeadlessMode -c -a res://test
+godot --headless --quiet -s addons/gdUnit4/bin/GdUnitCmdTool.gd --ignoreHeadlessMode -c -a res://test
 ```
 
 `-s` runs the tool script. Everything after it is gdUnit4's own arguments, not
 Godot's. The addon also ships `addons/gdUnit4/runtest.sh`, which wraps the same
 call and reads `GODOT_BIN`.
+
+`--quiet` is Godot's, and it goes before `-s`. gdUnit4 prints its report to stdout
+on a pass as well as a failure, and `--quiet` drops it, so a green run prints
+nothing past the banner. Errors still reach stderr: a suite that fails to parse
+prints its `SCRIPT ERROR`. A failed test prints nothing and exits 100; the detail
+is in `reports/`.
 
 ## Options
 
@@ -103,62 +109,103 @@ it from every suite broke nothing.
 ## The GitHub workflow
 
 ```yaml
+- name: Install xvfb
+  run: sudo apt-get update && sudo apt-get install -y xvfb
+
+- name: Install gdtoolkit
+  run: pip install "gdtoolkit==4.5.0"
+
 - name: Import assets
   working-directory: godot
   run: godot --headless --import
 
-- name: Install xvfb
-  run: sudo apt-get update && sudo apt-get install -y xvfb
-
-- name: Format and lint
+- name: Launch silently
   working-directory: godot
   run: |
-    pip install "gdtoolkit==4.5.0"
-    gdformat --check scripts/ test/
-    gdlint scripts/ test/
-
-- name: Compile with warnings as errors
-  working-directory: godot
-  run: |
+    # Parses only what the main scene reaches; the next step and the suites cover the rest.
     status=0
+    output=$(godot --headless --quit-after 180 2>&1) || status=$?
+    output=$(echo "$output" | grep -v '^Godot Engine' || true)
+    if [ -n "$output" ] || [ "$status" != 0 ]; then echo "$output"; exit 1; fi
+
+- name: Compile every script with warnings as errors
+  working-directory: godot
+  run: |
+    failed=0
     while IFS= read -r f; do
-      if out=$(godot --headless --check-only --script "$f" 2>&1); then
-        echo "ok   $f"
-      else
-        echo "FAIL $f"; echo "$out" | grep -v '^Godot Engine'; status=1
-      fi
+      status=0
+      output=$(godot --headless --check-only --script "$f" 2>&1) || status=$?
+      output=$(echo "$output" | grep -v '^Godot Engine' || true)
+      if [ -n "$output" ] || [ "$status" != 0 ]; then echo "$f"; echo "$output"; failed=1; fi
     done < <(find scripts test -name '*.gd' | sort)
-    exit $status
+    exit $failed
+
+- name: Format
+  working-directory: godot
+  run: gdformat --check scripts/ test/
+
+- name: Lint
+  working-directory: godot
+  run: gdlint scripts/ test/
 
 # Both legs use run_tests.sh so the runner flags live in one place.
 - name: Run the test suites
   working-directory: godot
-  run: ./run_tests.sh
+  run: |
+    status=0
+    output=$(./run_tests.sh 2>&1) || status=$?
+    output=$(echo "$output" | grep -v '^Godot Engine' || true)
+    if [ -n "$output" ] || [ "$status" != 0 ]; then echo "$output"; exit 1; fi
 
 - name: Run the test suites headless
   working-directory: godot
   env:
     GDUNIT_HEADLESS: "1"
-  run: ./run_tests.sh
+  run: |
+    status=0
+    output=$(./run_tests.sh 2>&1) || status=$?
+    output=$(echo "$output" | grep -v '^Godot Engine' || true)
+    if [ -n "$output" ] || [ "$status" != 0 ]; then echo "$output"; exit 1; fi
+
+- name: Upload the reports
+  if: failure()
+  uses: actions/upload-artifact@v4
+  with:
+    name: gdunit4-reports
+    path: godot/reports/
 ```
 
+Every Godot step has one shape: capture the exit status, drop the engine banner,
+and fail on anything left or on a non-zero exit. A pass prints nothing. The exit
+code is checked as well as the output, because a crash can exit non-zero with
+nothing past the banner, and a script that fails to parse can print its error and
+still exit 0.
+
 `run_tests.sh` picks `xvfb-run` when there is no display, so the first leg runs the
-mouse test for real and the second proves the suite is green headless too.
+mouse test for real and the second proves the suite is green headless too. It
+passes `--quiet`, so a green run is silent; the reports are uploaded when a step
+fails, because a quiet failure carries only its exit code.
 
-Check every script by hand. `--check-only --script <file>` parses one file and
-exits non-zero on any warning-as-error. Do not use `godot --quit-after N` for
-this: it runs the main scene and only parses what that scene reaches. Measured on
-4.7.2, an `untyped_declaration` planted in a script the main scene never loads
-printed nothing and the step passed.
+The silent launch is the first test, and it is required. It runs the main scene
+and parses only what that scene reaches: two of the thirteen scripts here.
+Measured on 4.7.2, an `untyped_declaration` planted in a script the main scene
+never loads printed nothing and the launch passed. The compile step and the
+suites cover the rest.
 
+The compile step parses every script with `--check-only --script <file>`, which
+exits non-zero and prints the error on any warning-as-error, and names the file.
 `--check-only` does not register autoloads. A script that names one fails with
 `Identifier not found`, so this step only fits a project with no autoload, like
 this one. With an autoload, load every script from a scene instead and check
 `can_instantiate()` — the `godot-code-style` project does that.
 
-The test run does catch such a script, but only when a suite depends on it, and
-it arrives as exit 105 "failed to parse" rather than as a test failure. The
-compile step names the file directly.
+The suites catch a broken script only when one of them depends on it, and it
+arrives as exit 105 "failed to parse" rather than as a test failure.
+
+A test that asserts a `push_error` or `push_warning` fails this CI. gdUnit4
+captures the message, and Godot still prints it to stderr, `--quiet` or not;
+`Engine.print_error_messages = false` hides it from gdUnit4 too. Measured on
+4.7.2. So `asserts_test.gd` asserts `is_success()` on a call that reports nothing.
 
 `apt-get update` before the install is not optional. Package lists on a hosted
 runner go stale and the install 404s without it.

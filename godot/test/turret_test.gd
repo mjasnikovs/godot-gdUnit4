@@ -93,7 +93,7 @@ func test_spy_runs_dry_after_six_shots() -> void:
 	var weapon: Weapon = spy(real)
 	turret.weapon = weapon
 
-	for i: int in 6:
+	for _i: int in 6:
 		assert_bool(turret.engage(ORIGIN, NEAR)).is_true()
 	assert_bool(turret.engage(ORIGIN, NEAR)).is_false()
 	assert_int(weapon.ammo).is_zero()

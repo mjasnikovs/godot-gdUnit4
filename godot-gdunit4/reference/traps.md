@@ -80,7 +80,7 @@ func simulate_action_pressed(action: String, event_index := -1) -> GdUnitSceneRu
 	simulate_action_release(action, event_index)
 ```
 
-Measured: `simulate_action_pressed(&"move_right")` followed by
+Measured: `simulate_action_pressed(&"dpad_right")` followed by
 `simulate_frames(10)` left `velocity.x` at `0.0`. The action was already released
 when the first frame ran.
 

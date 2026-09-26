@@ -46,15 +46,18 @@ Put these at the top of a test suite, right under `extends`. A suite with no
 That is the whole file-wide relaxation, and only test code gets it. Game code
 follows the `godot-code-style` skill and suppresses nothing.
 
-Everything else in `godot-code-style` holds in a suite too, with four more gdUnit4
-needs. A test reaches a node of the scene under test with `runner.find_child(...)`.
-It may emit an engine signal the scene declares, such as a `Button`'s `pressed`, to
-stand in for the input. A suite omits `class_name`; gdUnit4 finds it by path. And no
-`print`: a failed assert is the report.
+Everything else in `godot-code-style` holds in a suite too. Four more gdUnit4 needs
+are allowed: a fuzzer parameter keeps `:=`; a test reaches a node of the scene under
+test with `runner.find_child(...)`; it may emit an engine signal the scene declares,
+such as a `Button`'s `pressed`, to stand in for the input; and a suite omits
+`class_name`, because gdUnit4 finds it by path.
 
-Everything else stays typed. Read `mock`, `verify` and `on` into typed locals
-(below). Type `_test_parameters`, `_do_skip` and `fuzzer_iterations` too. Two
-cases keep a one-line `@warning_ignore`, never a file-wide one:
+`print` stays out: a failed assert is the report. The `is_instance_valid(self)` guard
+after an `await` is for game code; a suite is not freed while it waits.
+
+Doubles stay typed: read `mock`, `verify` and `on` into typed locals (below). Type
+`_test_parameters`, `_do_skip` and `fuzzer_iterations` too. Two cases keep a
+one-line `@warning_ignore`, never a file-wide one:
 
 - a fuzzer parameter, which must stay `:=`-inferred because gdUnit4 re-reads its
   default from source: `@warning_ignore("inferred_declaration")` on the test.
@@ -177,10 +180,10 @@ Full anatomy in `reference/doubles.md`.
 direction takes three steps:
 
 ```gdscript
-	runner.simulate_action_press(&"move_right")
+	runner.simulate_action_press(&"dpad_right")
 	await runner.simulate_frames(10)
 	assert_float(player.velocity.x).is_greater(0.0)
-	runner.simulate_action_release(&"move_right")
+	runner.simulate_action_release(&"dpad_right")
 ```
 
 Mouse positions are **window** pixels, not canvas pixels. A project that stretches
@@ -242,13 +245,16 @@ stops the test from running.
 ## Running it
 
 ```sh
-godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --ignoreHeadlessMode -c -a res://test
-xvfb-run -a godot -s addons/gdUnit4/bin/GdUnitCmdTool.gd -c -a res://test
+godot --headless --quiet -s addons/gdUnit4/bin/GdUnitCmdTool.gd --ignoreHeadlessMode -c -a res://test
+xvfb-run -a godot --quiet -s addons/gdUnit4/bin/GdUnitCmdTool.gd -c -a res://test
 ```
 
 Headless is refused without `--ignoreHeadlessMode` (exit 103). `-c` is not
 optional in practice: without it the runner is **fail-fast** and stops at the
-first failing test, so the run looks small rather than truncated.
+first failing test, so the run looks small rather than truncated. `--quiet` is
+Godot's: it drops gdUnit4's report from stdout, so a pass prints nothing past the
+banner. Errors still reach stderr, the exit code is the verdict, and
+`reports/` holds the detail.
 
 | Exit | Meaning |
 |---|---|
@@ -271,7 +277,8 @@ Reports land in `res://reports/`. Git-ignore them.
 4. `before_test` builds the subject with `auto_free`.
 5. Asserts first, then signals, then doubles, then the scene runner.
 6. Run `gdformat` and `gdlint` with the `godot-code-style` configs.
-7. Wire the CLI into CI and treat exit 101 as a failure too.
+7. Wire the CLI into CI. The step fails on any output past the engine banner or on
+   a non-zero exit, 101 included (`reference/ci.md`).
 
 ## Reference
 

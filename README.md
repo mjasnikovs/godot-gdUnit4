@@ -17,7 +17,6 @@ A test suite is one script. Every `test_*` function is a test.
 extends GdUnitTestSuite
 
 @warning_ignore_start("return_value_discarded")
-@warning_ignore_start("redundant_await")
 
 var health: Health
 
@@ -32,14 +31,15 @@ func test_damage_never_goes_below_zero() -> void:
 	assert_int(health.c_health).is_equal(0).is_not_negative()
 ```
 
-Those two `@warning_ignore_start` lines are not decoration. This project sets all 49
-GDScript warnings to error, and without them the test file does not load at all.
+That `@warning_ignore_start` line is not decoration. This project sets all 49
+GDScript warnings to error, and without it the test file does not load at all. A
+suite that awaits adds a second, for `redundant_await`.
 
 ## The ten traps
 
 | # | Trap | Symptom | Fix |
 |---|---|---|---|
-| 1 | Fluent asserts under warnings-as-errors | suite never loads, exit 105 | two `@warning_ignore_start` lines per suite, typed locals for doubles |
+| 1 | Fluent asserts under warnings-as-errors | suite never loads, exit 105 | up to two `@warning_ignore_start` lines, only the ones the suite needs; typed locals for doubles |
 | 2 | The runner is fail-fast | the run looks small, not truncated | `-c` |
 | 3 | Headless refused | exit 103 before anything runs | `--ignoreHeadlessMode`, or `xvfb-run` |
 | 4 | Mouse position is window pixels | the click lands on the parent Control | `get_screen_transform() * rect.get_center()` |
@@ -61,7 +61,8 @@ cd godot
 godot                                             # play the demo scene
 gdformat --check scripts/ test/
 gdlint scripts/ test/
-./run_tests.sh                                    # 49 test cases, exit 0 = pass
+godot --headless --quit-after 180                 # silent past the banner = the main scene compiles
+./run_tests.sh                                    # 49 test cases, silent and exit 0 = pass
 ```
 
 `run_tests.sh` uses `xvfb-run` when it can, so the mouse test really runs. Without
@@ -70,10 +71,10 @@ a display it falls back to `--headless` and that one test reports as skipped.
 All 49 of Godot's GDScript warnings are set to **error**, including `untyped_declaration`,
 `inferred_declaration` and all five `unsafe_*` checks. Game code follows the
 [godot-code-style](https://github.com/mjasnikovs/godot-code-style) skill and
-suppresses nothing. Test suites relax two warnings at the top of a file,
-`return_value_discarded` and `redundant_await`. Two more appear on one line each:
-the fuzzer test's `inferred_declaration`, and the `verify` with an argument
-matcher's `unsafe_method_access`.
+suppresses nothing. Test suites relax at most two warnings at the top of a file,
+`return_value_discarded`, and `redundant_await` only in a suite that awaits. Two
+more appear on one line each: the fuzzer test's `inferred_declaration`, and the
+`verify` with an argument matcher's `unsafe_method_access`.
 
 ## What is in the project
 
