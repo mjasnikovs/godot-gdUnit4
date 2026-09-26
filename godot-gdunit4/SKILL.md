@@ -260,7 +260,10 @@ Reports land in `res://reports/`. Git-ignore them.
 ## Build order
 
 1. Enable the plugin: `addons/gdUnit4/` in the project, ticked in Project Settings.
-2. One suite per script under test, in `test/`, named `<subject>_test.gd`.
+2. One suite per script under test, in `test/`, named `<subject>_test.gd`. At most
+   18 tests in one: gdlint caps a class at 20 public methods, and `before_test` and
+   `after_test` count. A bigger subject gets one suite per behaviour,
+   `<subject>_<behaviour>_test.gd`.
 3. `extends GdUnitTestSuite` and the two `@warning_ignore_start` lines.
 4. `before_test` builds the subject with `auto_free`.
 5. Asserts first, then signals, then doubles, then the scene runner.

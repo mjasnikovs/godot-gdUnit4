@@ -67,7 +67,7 @@ gdlint scripts/ test/
 `run_tests.sh` uses `xvfb-run` when it can, so the mouse test really runs. Without
 a display it falls back to `--headless` and that one test reports as skipped.
 
-All 23 GDScript warnings are set to **error**, including `untyped_declaration`,
+23 of Godot's 49 GDScript warnings are set to **error**, including `untyped_declaration`,
 `inferred_declaration` and all five `unsafe_*` checks. Game code follows the
 [godot-code-style](https://github.com/mjasnikovs/godot-code-style) skill and
 suppresses nothing. Test suites relax two warnings at the top of a file,
