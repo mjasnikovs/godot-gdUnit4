@@ -1,17 +1,14 @@
 extends GdUnitTestSuite
 
-# Hooks, plain asserts and signal asserts on a Node under test.
-# gdUnit4's assertions are a fluent chain, so every call returns the assert and
-# the project's strict warnings-as-errors would reject the file. Two of them
-# are switched off for test code only, never for game code.
 @warning_ignore_start("return_value_discarded")
 @warning_ignore_start("redundant_await")
+
+# Hooks, plain asserts and signal asserts on a Node under test.
 
 var health: Health
 
 
 func before_test() -> void:
-	# auto_free releases the node when the test ends.
 	health = auto_free(Health.new())
 	add_child(health)
 
@@ -45,7 +42,6 @@ func test_dead_stays_dead() -> void:
 
 
 func test_damaged_signal_carries_amount() -> void:
-	# monitor_signals starts recording before the action that emits.
 	var monitored: Health = monitor_signals(health)
 	monitored.take_damage(15)
 	await assert_signal(monitored).is_emitted("damaged", [15])

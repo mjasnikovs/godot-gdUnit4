@@ -8,8 +8,8 @@ signal started
 
 func _ready() -> void:
 	assert(play_button, "menu.gd - @export play_button is not set in the editor on: " + self.name)
-	var _error: int = play_button.pressed.connect(func() -> void: report_started())
+	var _error: int = play_button.pressed.connect(func() -> void: _report_started())
 
 
-func report_started() -> void:
+func _report_started() -> void:
 	started.emit()

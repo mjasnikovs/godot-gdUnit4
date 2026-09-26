@@ -23,8 +23,13 @@ A test suite is one script that `extends GdUnitTestSuite`. Every function named
 ```gdscript
 extends GdUnitTestSuite
 
+@warning_ignore_start("return_value_discarded")
+
 
 func test_damage_subtracts() -> void:
+	var health: Health = auto_free(Health.new())
+	add_child(health)
+	health.take_damage(30)
 	assert_int(health.c_health).is_equal(70)
 ```
 
@@ -35,8 +40,8 @@ the value is thrown away. `await` sits in front of calls that are not coroutines
 Both are warnings, and a project with warnings as errors **refuses to load the test
 file at all** — reported as `Parse error` during discovery, exit code 105.
 
-Put these at the top of a test suite, right under `extends`. A suite with no
-`await` leaves out the second:
+Put these right after the declaration, above everything else in the suite. A
+suite with no `await` leaves out the second:
 
 ```gdscript
 @warning_ignore_start("return_value_discarded")
@@ -127,19 +132,28 @@ by default. Measured: 2s 10ms, against 102ms with `wait_until(100)`.
 
 ## Mocks, stubs and spies
 
-A **mock** is a fake. It runs no real code and returns type defaults.
+A **mock** is a fake. It runs no real code and returns type defaults. `do_return`
+fixes one method's answer.
 
 ```gdscript
 	var weapon: Weapon = mock(Weapon)
-	var stub: Weapon = do_return(true).on(weapon)
-	stub.can_fire()  # stub one method
+	# on() and verify() return Variant. A typed local makes the next call checked.
+	var stub: Weapon = do_return(false).on(weapon)
+	stub.can_fire()
 	turret.weapon = weapon
 
-	assert_bool(turret.engage(ORIGIN, NEAR)).is_true()
-	var checked: Weapon = verify(weapon)  # exactly once
+	assert_bool(turret.engage(ORIGIN, NEAR)).is_false()
+	var checked: Weapon = verify(weapon)
+	checked.can_fire()
+	checked = verify(weapon, 0)
 	checked.fire(NEAR)
-	checked = verify(weapon, 0)  # never
-	checked.fire(FAR)
+```
+
+`verify(weapon)` expects exactly one call and `verify(weapon, n)` expects `n`, so 0
+means never. An argument matcher is the one call that cannot go through a typed
+receiver:
+
+```gdscript
 	# A matcher is not a Vector2, so the verify receiver cannot be typed as Weapon.
 	@warning_ignore("unsafe_method_access")
 	verify(weapon, 2).fire(any_vector2())
@@ -151,11 +165,13 @@ A **spy** wraps a real instance. Real code runs and calls are still recorded.
 	var real: Weapon = auto_free(Weapon.new())
 	add_child(real)
 	var weapon: Weapon = spy(real)
+	turret.weapon = weapon
 
 	assert_bool(turret.engage(ORIGIN, NEAR)).is_true()
 	var checked: Weapon = verify(weapon)
 	checked.fire(NEAR)
-	assert_int(weapon.ammo).is_equal(5)  # the real shot was taken
+	# The real fire() ran, so ammo really dropped.
+	assert_int(weapon.c_ammo).is_equal(5)
 ```
 
 `verify_no_interactions(x)` asserts nothing was called.
@@ -169,10 +185,12 @@ Full anatomy in `reference/doubles.md`.
 `scene_runner` loads a scene, puts it in the tree and drives it.
 
 ```gdscript
-	var runner: GdUnitSceneRunner = scene_runner("res://scenes/player.tscn")
+	var runner: GdUnitSceneRunner = scene_runner(PLAYER_SCENE_PATH)
 	var player: Player = runner.scene()
+	var start_y: float = player.global_position.y
 
 	await runner.simulate_frames(20)
+
 	assert_float(player.global_position.y).is_greater(start_y)
 ```
 
@@ -183,7 +201,17 @@ direction takes three steps:
 	runner.simulate_action_press(&"dpad_right")
 	await runner.simulate_frames(10)
 	assert_float(player.velocity.x).is_greater(0.0)
+	assert_int(player.c_direction).is_equal(Player.Direction.right)
+
+	runner.simulate_action_press(&"dpad_left")
 	runner.simulate_action_release(&"dpad_right")
+	await runner.simulate_frames(10)
+	assert_float(player.velocity.x).is_less(0.0)
+	assert_int(player.c_direction).is_equal(Player.Direction.left)
+
+	runner.simulate_action_release(&"dpad_left")
+	await runner.simulate_frames(10)
+	assert_float(player.velocity.x).is_zero()
 ```
 
 Mouse positions are **window** pixels, not canvas pixels. A project that stretches
@@ -230,13 +258,23 @@ must stay inferred, so its test carries a one-line ignore.
 
 ```gdscript
 @warning_ignore("inferred_declaration")
-func test_any_name_fits(fuzzer := Fuzzers.rand_str(1, 12), fuzzer_iterations: int = 50) -> void:
-	# fuzzer_iterations must be read or unused_parameter rejects the file, and
-	# gdUnit4 needs that exact name so it cannot be underscore-prefixed.
+func test_any_name_fits_until_capacity(fuzzer := Fuzzers.rand_str(1, 12), fuzzer_iterations: int = 50) -> void:
+	# fuzzer_iterations has to be read or unused_parameter rejects the file, and
+	# gdUnit4 needs the exact name so it cannot be underscore-prefixed.
 	assert_int(fuzzer_iterations).is_equal(50)
-	# Not `name`: GdUnitTestSuite extends Node, so `name` shadows Node.name.
-	var item_name: String = fuzzer.next_value()
+	var fresh: Inventory = Inventory.new()
+	for i: int in range(Inventory.CAPACITY):
+		# The index prefix keeps names distinct. add() rejects duplicates and two
+		# short random strings do collide.
+		var item_name: String = "%d_%s" % [i, fuzzer.next_value()]
+		assert_bool(fresh.add(item_name)).is_true()
+	assert_bool(fresh.is_full()).is_true()
+	assert_bool(fresh.add("one_too_many")).is_false()
+	assert_array(fresh.items()).has_size(Inventory.CAPACITY)
 ```
+
+The local is `item_name`, not `name`: a suite extends `Node`, so `name` shadows
+`Node.name`.
 
 An **unrecognised** argument name does not fail. gdUnit4 marks the test skipped
 with reason "Unknown test case argument's". A typo in `_test_parameters` silently

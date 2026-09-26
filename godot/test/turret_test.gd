@@ -1,7 +1,8 @@
 extends GdUnitTestSuite
 
-# Mocks, stubs and spies: testing a collaborator without the real thing.
 @warning_ignore_start("return_value_discarded")
+
+# Mocks, stubs and spies: testing a collaborator without the real thing.
 
 const ORIGIN: Vector2 = Vector2.ZERO
 const NEAR: Vector2 = Vector2(50, 0)
@@ -19,7 +20,6 @@ func test_no_weapon_never_engages() -> void:
 	assert_bool(turret.engage(ORIGIN, NEAR)).is_false()
 
 
-# A mock answers with defaults and records calls. It runs no real code.
 func test_out_of_range_never_touches_the_weapon() -> void:
 	var weapon: Weapon = mock(Weapon)
 	turret.weapon = weapon
@@ -28,7 +28,6 @@ func test_out_of_range_never_touches_the_weapon() -> void:
 	verify_no_interactions(weapon)
 
 
-# do_return stubs one method for one mock.
 func test_empty_weapon_is_not_fired() -> void:
 	var weapon: Weapon = mock(Weapon)
 	# on() and verify() return Variant. A typed local makes the next call checked.
@@ -59,7 +58,6 @@ func test_loaded_weapon_fires_once_at_the_target() -> void:
 	verify_no_more_interactions(weapon)
 
 
-# any_vector2 matches whatever argument arrives.
 func test_fires_at_whatever_is_in_range() -> void:
 	var weapon: Weapon = mock(Weapon)
 	var stub: Weapon = do_return(true).on(weapon)
@@ -84,7 +82,7 @@ func test_spy_runs_the_real_weapon() -> void:
 	var checked: Weapon = verify(weapon)
 	checked.fire(NEAR)
 	# The real fire() ran, so ammo really dropped.
-	assert_int(weapon.ammo).is_equal(5)
+	assert_int(weapon.c_ammo).is_equal(5)
 
 
 func test_spy_runs_dry_after_six_shots() -> void:
@@ -93,9 +91,9 @@ func test_spy_runs_dry_after_six_shots() -> void:
 	var weapon: Weapon = spy(real)
 	turret.weapon = weapon
 
-	for _i: int in 6:
+	for _i: int in range(6):
 		assert_bool(turret.engage(ORIGIN, NEAR)).is_true()
 	assert_bool(turret.engage(ORIGIN, NEAR)).is_false()
-	assert_int(weapon.ammo).is_zero()
+	assert_int(weapon.c_ammo).is_zero()
 	var checked: Weapon = verify(weapon, 6)
 	checked.fire(NEAR)

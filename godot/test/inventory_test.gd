@@ -1,7 +1,8 @@
 extends GdUnitTestSuite
 
-# Array asserts, parameterized cases and fuzzers on a plain RefCounted.
 @warning_ignore_start("return_value_discarded")
+
+# Array asserts, parameterized cases and fuzzers on a plain RefCounted.
 
 var inventory: Inventory
 
@@ -57,7 +58,7 @@ func test_items_returns_a_copy() -> void:
 func test_capacity_is_reached_after_n_adds(
 	count: int, expected_full: bool, _test_parameters: Array = [[1, false], [3, false], [4, true]]
 ) -> void:
-	for i: int in count:
+	for i: int in range(count):
 		assert_bool(inventory.add("item_%d" % i)).is_true()
 	assert_bool(inventory.is_full()).is_equal(expected_full)
 
@@ -70,7 +71,7 @@ func test_any_name_fits_until_capacity(fuzzer := Fuzzers.rand_str(1, 12), fuzzer
 	# gdUnit4 needs the exact name so it cannot be underscore-prefixed.
 	assert_int(fuzzer_iterations).is_equal(50)
 	var fresh: Inventory = Inventory.new()
-	for i: int in Inventory.CAPACITY:
+	for i: int in range(Inventory.CAPACITY):
 		# The index prefix keeps names distinct. add() rejects duplicates and two
 		# short random strings do collide.
 		var item_name: String = "%d_%s" % [i, fuzzer.next_value()]

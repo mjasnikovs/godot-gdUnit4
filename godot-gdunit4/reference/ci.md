@@ -58,12 +58,12 @@ JUnit.
 Action events and key events work under `--headless`. Mouse picking on `Control`
 nodes does not. Two ways out:
 
-1. Run the whole thing under a virtual display: `xvfb-run -a godot -s ...` and drop
-   `--ignoreHeadlessMode`.
+1. Run the whole thing under a virtual display: `xvfb-run -a godot --quiet -s ...`
+   and drop `--ignoreHeadlessMode`.
 2. Skip the display-dependent tests:
 
 ```gdscript
-func test_clicking_the_button(
+func test_clicking_the_button_emits_started(
 	_do_skip: bool = DisplayServer.get_name() == "headless",
 	_skip_reason: String = "mouse picking needs a real display server"
 ) -> void:
@@ -83,7 +83,7 @@ does not want goes into a typed `_`-prefixed throwaway:
 
 ```gdscript
 	var _collided: bool = move_and_slide()
-	var _error: int = play_button.pressed.connect(func() -> void: report_started())
+	var _error: int = play_button.pressed.connect(func() -> void: _report_started())
 ```
 
 `move_and_slide()` returns `bool` and `Signal.connect()` returns `int`. Typing

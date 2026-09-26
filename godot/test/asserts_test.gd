@@ -1,9 +1,9 @@
 extends GdUnitTestSuite
 
-# The assert families that are easy to forget: dict, vector, object, func,
-# error and failure.
 @warning_ignore_start("return_value_discarded")
 @warning_ignore_start("redundant_await")
+
+# The assert families that are easy to forget: dict, vector, object, func, error and failure.
 
 
 func test_dict_asserts() -> void:
@@ -24,7 +24,6 @@ func test_object_asserts() -> void:
 	assert_object(weapon).is_same(weapon).is_not_same(auto_free(Weapon.new()))
 
 
-# extract maps a method over the array before asserting on the results.
 func test_array_extract() -> void:
 	var pistol: Weapon = auto_free(Weapon.new())
 	var rifle: Weapon = auto_free(Weapon.new())
@@ -33,7 +32,6 @@ func test_array_extract() -> void:
 	assert_array([pistol, rifle]).extract("get_name").contains_exactly(["pistol", "rifle"])
 
 
-# assert_func polls a method instead of waiting on a signal.
 func test_func_assert_polls_until_true() -> void:
 	var health: Health = auto_free(Health.new())
 	add_child(health)

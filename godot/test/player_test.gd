@@ -1,8 +1,9 @@
 extends GdUnitTestSuite
 
-# Scene runner: drive a real scene, advance frames, simulate input.
 @warning_ignore_start("return_value_discarded")
 @warning_ignore_start("redundant_await")
+
+# Scene runner: drive a real scene, advance frames, simulate input.
 
 const PLAYER_SCENE_PATH: String = "res://scenes/player.tscn"
 
@@ -47,13 +48,13 @@ func test_held_direction_drives_the_body() -> void:
 	runner.simulate_action_press(&"dpad_right")
 	await runner.simulate_frames(10)
 	assert_float(player.velocity.x).is_greater(0.0)
-	assert_int(player.c_facing).is_equal(1)
+	assert_int(player.c_direction).is_equal(Player.Direction.right)
 
 	runner.simulate_action_press(&"dpad_left")
 	runner.simulate_action_release(&"dpad_right")
 	await runner.simulate_frames(10)
 	assert_float(player.velocity.x).is_less(0.0)
-	assert_int(player.c_facing).is_equal(-1)
+	assert_int(player.c_direction).is_equal(Player.Direction.left)
 
 	runner.simulate_action_release(&"dpad_left")
 	await runner.simulate_frames(10)

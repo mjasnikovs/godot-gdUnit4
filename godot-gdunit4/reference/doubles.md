@@ -23,12 +23,18 @@ behaviour.
 	checked.can_fire()
 ```
 
-Modes:
+The second argument is the mode:
+
+| Mode | A call on the mock |
+|---|---|
+| `RETURN_DEFAULTS`, the default | returns the type default |
+| `CALL_REAL_FUNC` | runs the real body |
+| `RETURN_DEEP_STUB` | returns a mock where the method returns an object |
 
 ```gdscript
-	mock(Weapon)  # RETURN_DEFAULTS, the default
-	mock(Weapon, CALL_REAL_FUNC)  # runs the real body
-	mock(Weapon, RETURN_DEEP_STUB)  # object returns are themselves mocks
+	var fake: Weapon = mock(Weapon)
+	var real_body: Weapon = mock(Weapon, CALL_REAL_FUNC)
+	var deep: Weapon = mock(Weapon, RETURN_DEEP_STUB)
 ```
 
 A mock of a `Node` subclass does not need `auto_free`. gdUnit4 releases doubles
@@ -59,7 +65,8 @@ happen, and the call is recorded on the way through.
 	assert_bool(turret.engage(ORIGIN, NEAR)).is_true()
 	var checked: Weapon = verify(weapon)
 	checked.fire(NEAR)
-	assert_int(weapon.ammo).is_equal(5)  # ammo really dropped
+	# The real fire() ran, so ammo really dropped.
+	assert_int(weapon.c_ammo).is_equal(5)
 ```
 
 Talk to the **spy**, not the original. Calls made straight to `real` are invisible
@@ -67,15 +74,16 @@ to `verify`.
 
 ## Verify
 
-```gdscript
-	var checked: Weapon = verify(weapon)  # exactly once, default times = 1
-	checked.fire(NEAR)
-	checked = verify(weapon, 0)  # never
-	checked.fire(FAR)
-	verify_no_interactions(weapon)  # nothing at all was called
-	verify_no_more_interactions(weapon)  # nothing left unverified
-	reset(weapon)  # clear the recorded calls
-```
+| Call | Asserts |
+|---|---|
+| `verify(weapon)` | the method called on its result ran exactly once |
+| `verify(weapon, n)` | that method ran exactly `n` times, `0` for never |
+| `verify_no_interactions(weapon)` | nothing at all was called |
+| `verify_no_more_interactions(weapon)` | nothing is left unverified |
+| `reset(weapon)` | nothing; it clears the recorded calls |
+
+`verify` returns the double to call the expected method on, read into a typed
+local (below).
 
 `verify_no_more_interactions` counts **every** recorded call. A probe call the code
 under test made on the way — `can_fire()` before `fire()` — is an unverified

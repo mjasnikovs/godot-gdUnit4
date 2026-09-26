@@ -1,8 +1,9 @@
 extends GdUnitTestSuite
 
-# UI interaction: clicking a Button through the scene runner.
 @warning_ignore_start("return_value_discarded")
 @warning_ignore_start("redundant_await")
+
+# UI interaction: clicking a Button through the scene runner.
 
 const MENU_SCENE_PATH: String = "res://scenes/menu.tscn"
 
